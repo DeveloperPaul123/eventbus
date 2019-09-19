@@ -43,6 +43,6 @@ public:
     }
 private:
     event_bus() = default;
-    BEFRIEND_SINGLETON
+	template< typename> friend class ::singleton;
 	std::unordered_map<std::type_index, std::vector<callable<void>>> handler_registrations;
 };
