@@ -35,7 +35,7 @@ The libary provides an `event_bus` class. You can register event handlers like s
 event_bus::register_handler<event_type>(&event_callback)
 ````
 
-Where `event_type` is your "event" type (any type!) and `&event_callback` is a reference to a function. You can also use a lamba or a class member function* (:construction: curently under construction :construction:). 
+Where `event_type` is your "event" type (any type!) and `&event_callback` is a reference to a function. You can also use a lamba or a class member function (though it is a bit verbose). 
 
 A more complete example:
 
@@ -74,6 +74,11 @@ int main()
     return 0;
 }
 ````
+
+## WIP Items
+
+* [ ] Add ability to de-register callbacks. 
+* [ ] Reduce verbosity of using class member functions.
 
 ## Limitations
 
@@ -118,3 +123,7 @@ This is a bit convoluted, but can be improved upon.
 ### Header Only
 
 The library is header only, but `event_bus` is implemented as a singleton. This will pose problems if you need the same singleton instance across application/`dll` boundaries. 
+
+### Multithreading
+
+Currently this library is **not** thread safe and is **not** inter-process. 
