@@ -23,7 +23,7 @@ endif()
 if(EVENTBUS_BUILD_TESTS)
     set(project_test_sources
         test/main.cpp
-        test/callable_tests.cpp
+        test/event_bus_tests.cpp
     )
 
     add_executable(${PROJECT_NAME}.tests ${project_test_sources})
