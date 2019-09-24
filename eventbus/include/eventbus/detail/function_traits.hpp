@@ -2,8 +2,11 @@
 
 #include <functional>
 
-// Taken from answer here: https://stackoverflow.com/questions/7943525/is-it-possible-to-figure-out-the-parameter-type-and-return-type-of-a-lambda
-// Original code is here: https://github.com/kennytm/utils/blob/master/traits.hpp
+/**
+ * `member_function_traits originally from here (PMF_traits struct): https://github.com/KonanM/CppProperties/blob/master/include/cppproperties/Signal.h
+ * `function_traits` taken from answer here: https://stackoverflow.com/questions/7943525/is-it-possible-to-figure-out-the-parameter-type-and-return-type-of-a-lambda
+ * Original code is here: https://github.com/kennytm/utils/blob/master/traits.hpp
+ */ 
 namespace dp
 {
 	namespace detail
