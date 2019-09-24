@@ -21,7 +21,7 @@ namespace dp
 		~singleton() = default;
 
 	public:
-		static std::shared_ptr<T> instance()
+		[[nodiscard]] static std::shared_ptr<T> instance()
 		{
 			static std::shared_ptr<T> object(new T());
 			return object;
