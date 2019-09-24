@@ -2,6 +2,8 @@
 
 #include <functional>
 
+// Taken from answer here: https://stackoverflow.com/questions/7943525/is-it-possible-to-figure-out-the-parameter-type-and-return-type-of-a-lambda
+// Original code is here: https://github.com/kennytm/utils/blob/master/traits.hpp
 namespace dp
 {
 	namespace detail
