@@ -31,9 +31,16 @@ class my_callback_object
 public:
 	my_callback_object() = default;
 	void on_event_fired(const dummy_event& evt) { event_count_++; }
+	void on_third_event() {};
 	[[nodiscard]] int get_event_count() const { return event_count_; }
 private:
 	int event_count_{ 0 };
+};
+
+class third_event_object
+{
+public:
+	void on_third_event() {};
 };
 
 int main()
@@ -60,6 +67,11 @@ int main()
 	const auto other_event_second_reg = event_bus::register_handler<other_event>([](const other_event& evt){std::cout << "second other event handler says: " << evt.id << " " << evt.message << std::endl;});
 	const auto dmy_evt_first_reg = event_bus::register_handler<dummy_event>([](const dummy_event& evt) {std::cout << "wow it works!" << std::endl;});
 	const auto dmy_evt_pmr_reg = event_bus::register_handler<dummy_event>(&callback_obj , &my_callback_object::on_event_fired);
+	const auto thrid_event_reg_pmr = event_bus::register_handler<third_event>(&callback_obj, &my_callback_object::on_third_event);
+
+	// the following does not compile
+	// third_event_object teo;
+	// const auto rg = event_bus::register_handler<third_event>(&teo, &my_callback_object::on_third_event);
 	
 	other_event other_evt{ 2, "hello there" };
 	dummy_event dmy_event{ "oh boy..." };
