@@ -5,6 +5,7 @@ project(eventbus)
 set(project_headers
     include/eventbus/utils/singleton.hpp
     include/eventbus/utils/callable.hpp
+    include/eventbus/detail/function_traits.hpp
     include/eventbus/event_bus.hpp
 )
 
