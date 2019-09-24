@@ -11,7 +11,7 @@ class singleton
  protected:
 	explicit singleton()
 	{
-		static_assert(std::is_base_of<B, D>::value, "Invalid inheritance relationship detected");
+		static_assert(std::is_base_of<singletonType, T>::value, "Invalid inheritance relationship detected");
 	}
 
    singleton( const singleton& ) = default;
