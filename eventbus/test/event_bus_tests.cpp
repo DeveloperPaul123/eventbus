@@ -24,6 +24,7 @@ public:
 	[[nodiscard]] unsigned int get_count() const { return event_count_.load(); };
 	void on_test_event()
 	{
+		std::cout << "Handler counter.\n";
 		++event_count_;
 	}
 };
@@ -32,7 +33,7 @@ class EventBusTestFixture : public ::testing::Test
 {
 protected:
 	event_handler_counter counter;
-	std::type_index counter_event_registration_{ typeid(&event_handler_counter::on_test_event) };
+	dp::handler_registration counter_event_registration_;
 	
 	void SetUp() override
 	{
