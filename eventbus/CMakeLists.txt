@@ -9,9 +9,11 @@ set(project_headers
 
 add_library(${PROJECT_NAME} INTERFACE)
 add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
+add_library(dp::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
+
 target_include_directories(${PROJECT_NAME} INTERFACE include)
 
-# required C++17
+# require C++17
 target_compile_features(${PROJECT_NAME} INTERFACE cxx_std_17)
 
 if(MSVC_IDE)
