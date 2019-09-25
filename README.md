@@ -1,41 +1,118 @@
-# eventbus
-
 `eventbus` is a simple, header only C++17 event bus library that doesn't require you to inherit from any sort of `event` class.
 
-## Introduction
+- [Design Goals](#design-goals)
+- [Integration](#integration)
+    - [CMake](#cmake)
+    - [vcpkg](#vcpkg)
+  - [Usage](#usage)
+    - [Define An Event Object](#define-an-event-object)
+    - [Registering Handlers](#registering-handlers)
+    - [Firing Events](#firing-events)
+- [Work In Progress Items](#work-in-progress-items)
+- [Limitations](#limitations)
+  - [Header Only](#header-only)
+  - [Multithreading](#multithreading)
+- [Contributing](#contributing)
 
-`eventbus` implements the so called "Mediator" pattern. This pattern is useful when you want components to communicate to each other without necessary "knowning" about each other. This can be useful in *some* situations but should be used with caution (there are alternative design patterns to consider). 
+## Design Goals
 
-## Motivation
+`eventbus` implements the "Mediator" pattern. This pattern is useful when you want components to communicate to each other without necessary "knowning" about each other. This can be useful in *some* situations but should be used with caution (there are alternative design patterns to consider). 
 
-There are many event bus implementations; so why another one? All the implmentations that I've seen (in C++) require the consumer of the library to inherit from a base `Event` class. Mean that if you want to use your own custom event class, you have to so something like:
+* **Do not require event object inheritance** I wanted to implement an event bus system that doesn't require users to inherit from some base `Event` class in order to use the event class. 
+* **Many Callback Types** It's important that the library supports many different types of callbacks including:
+  * Lambdas
+  * Class member functions
+  * Free functions
+* **Flexible Callbacks** Callbacks should be able to take no input parameters, the event type by `const&` or by value. 
 
+## Integration
+
+`eventbus` is a header only library. All the files you need are in the `eventbus/include` folder. To use the library just include `eventbus/event_bus.hpp`. 
+
+#### CMake
+
+`eventbus` defines three CMake `INTERFACE` targets that can be used in your project:
+* `eventbus`
+* `eventbus::eventbus`
+* `dp::eventbus`
+
+````cmake
+find_package(dp::eventbus REQUIRED)
+
+````
+
+Alternatively, you can use something like [CPM](https://github.com/TheLartians/CPM) which is based on CMakes `Fetch_Content` module.
+
+````cmake
+CPMAddPackage(
+    NAME eventbus
+    GITHUB_REPOSITORY DeveloperPaul123/eventbus
+    GIT_TAG #053902d63de5529ee65d965f8b1fb0851eceed24 change this to latest commit
+)
+````
+
+#### vcpkg 
+
+:construction: This library will be on `vcpkg` soon. :construction:
+
+### Usage
+
+The basic premise of the `event_bus` is that with it, you can:
+* Register handlers
+* Fire events that call the corresponding handlers
+
+#### Define An Event Object
+
+The "event" object can really be any class or structure you want. This is where the flexibility of this library shines. 
+
+#### Registering Handlers
+
+**Free function**
 ````cpp
-class MyEvent : public Event
+void event_callback(event_type evt)
 {
-    // class info / properties and what not
-};
+    // event callback logic...
+}
+
+dp::event_bus::register_handler<event_type>(&event_callback)
 ````
 
-To me, this is undesireable, so I set out to see if it was possible to implement something similar, but remove the requirement of inheriting from a base `event` type. 
+**Lambda**
+````cpp
+dp::event_bus::register_handler<event_type>([](const event_type& evt)
+{
+    // logic code...
+});
+````
 
-After going through some training at CppCon2019, I wanted to apply my newfound knowledge and this project was a perfect oppurtunity.
-
-## Usage
-
-### Getting the Library
-
-To get the library, you can simply copy the source to your project and include it as a sub-directory (or a git submodule). Alternatively, you can use something like [CPM](https://github.com/TheLartians/CPM) which is based on CMakes `Fetch_Content` module.
-
-### Using the Library
-
-The libary provides an `event_bus` class. You can register event handlers like so:
+**Class Member Function**
 
 ````cpp
-event_bus::register_handler<event_type>(&event_callback)
+class event_handler
+{
+    public:
+        void on_event(event_type type)
+        {
+            // handler logic...
+        }
+};
+
+// other code
+
+event_handler handler;
+dp::event_bus::register_handler<event_type>(&handler, &event_handler::on_event);
 ````
 
-Where `event_type` is your "event" type (any type!) and `&event_callback` is a reference to a function. You can also use a lamba or a class member function (though it is a bit verbose). 
+**Note:** You can't mix a class instance of type `T` with the member function of another class (i.e. `&U::function_name`). 
+
+#### Firing Events
+
+````cpp
+event_type evt{
+    // data and info..
+};
+dp::event_bus::fire_event(evt); // all connect handler for the given event type will be fired.
+````
 
 A more complete example:
 
@@ -58,9 +135,9 @@ void function_callback(const my_event& evt)
 
 int main()
 {
-    event_bus::register_handler<my_event>(&evt);
+    auto handler_registration = dp::event_bus::register_handler<my_event>(&evt);
 
-    event_bus::register_handler<my_event>(
+    auto lambda_registration = dp::event_bus::register_handler<my_event>(
         [](const my_event& evt)
         {
             std::cout << "got event lambda: " << evt.message <<std::endl;
@@ -69,61 +146,30 @@ int main()
 
     // fire events
     my_event evt{2, "my_event message"};
-    event_bus::fire_event(evt);
+    dp::event_bus::fire_event(evt);
 
     return 0;
 }
 ````
 
-## WIP Items
+More example code can be seen in the [demo](https://github.com/DeveloperPaul123/eventbus/tree/develop/demo) project. 
 
-* [ ] Add ability to de-register callbacks. 
-* [ ] Reduce verbosity of using class member functions.
+## Work In Progress Items
+
+* Thread safety for all operations. 
 
 ## Limitations
 
-In general, all callback functions **must** return `void` and **must** accept the event type parameter as a const reference (i.e. `const T&`). Currently, `eventbus` only supports single argument functions as callbacks, but this may be improved upon at a later time. 
-
-### Class Member Functions
-
-Under the hood, `event_bus` uses an internal `callable` class that type erases (in a way) the arguments to an `std::function` object. Currently, you can use `std::bind()` to get a valid `std::function` that can be registered with the event bus. 
-
-Example:
-````cpp
-struct my_event
-{
-    int id;
-    std::string;
-};
-
-class my_callback
-{
-    public:
-        my_callback() = default;
-        void on_my_event(const my_event& evt)
-        {
-            std::cout << "got callback in class: " << evt.message
-                << std::endl;
-        }
-};
-
-int main()
-{
-    my_callback callback;
-    std::function<void(const my_event&)> class_callback = 
-        std::bind(&my_callback::on_my_event, &callback, std::placeholders::_1);
-    event_bus::register_handler<my_event>(callback);
-
-    event_bus::fire_event(my_event{3, "my_event"});
-}
-````
-
-This is a bit convoluted, but can be improved upon.
+In general, all callback functions **must** return `void`. Currently, `eventbus` only supports single argument functions as callbacks, but this may be improved upon at a later time. 
 
 ### Header Only
 
-The library is header only, but `event_bus` is implemented as a singleton. This will pose problems if you need the same singleton instance across application/`dll` boundaries. 
+The library is header only, but `event_bus` is implemented as a singleton. This may pose problems if you need the same singleton instance across application/`dll` boundaries. 
 
 ### Multithreading
 
-Currently this library is **not** thread safe and is **not** inter-process. 
+Currently this library is not fully thread safe. The `dp::event_bus` class usese a Meyer's singlton which make the instantiation of the event bus thread safe, but other functionality is not yet thread safe. 
+
+## Contributing
+
+If you find an issue with this library please file an [issue](https://github.com/DeveloperPaul123/eventbus/issues). Pull requests are also welcome! Contributing guide soon to come. 
