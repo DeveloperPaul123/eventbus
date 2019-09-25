@@ -3,16 +3,17 @@ cmake_minimum_required(VERSION 3.14)
 project(eventbus)
 
 set(project_headers
-    include/eventbus/utils/singleton.hpp
-    include/eventbus/utils/callable.hpp
+    include/eventbus/detail/function_traits.hpp
     include/eventbus/event_bus.hpp
 )
 
 add_library(${PROJECT_NAME} INTERFACE)
 add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
+add_library(dp::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
+
 target_include_directories(${PROJECT_NAME} INTERFACE include)
 
-# required C++17
+# require C++17
 target_compile_features(${PROJECT_NAME} INTERFACE cxx_std_17)
 
 if(MSVC_IDE)
@@ -22,7 +23,7 @@ endif()
 if(EVENTBUS_BUILD_TESTS)
     set(project_test_sources
         test/main.cpp
-        test/callable_tests.cpp
+        test/event_bus_tests.cpp
     )
 
     add_executable(${PROJECT_NAME}.tests ${project_test_sources})
