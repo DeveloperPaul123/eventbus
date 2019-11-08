@@ -17,7 +17,7 @@
 
 ## Design Goals
 
-`eventbus` implements the "Mediator" pattern. This pattern is useful when you want components to communicate to each other without necessary "knowning" about each other. This can be useful in *some* situations but should be used with caution (there are alternative design patterns to consider). 
+`eventbus` implements the "Mediator" pattern. This pattern is useful when you want components to communicate to each other without necessarily "knowing" about each other. This can be useful in *some* situations but should be used with caution (there are alternative design patterns to consider). 
 
 * **Do not require event object inheritance** I wanted to implement an event bus system that doesn't require users to inherit from some base `Event` class in order to use the event class. 
 * **Many Callback Types** It's important that the library supports many different types of callbacks including:
@@ -42,13 +42,13 @@ find_package(dp::eventbus REQUIRED)
 
 ````
 
-Alternatively, you can use something like [CPM](https://github.com/TheLartians/CPM) which is based on CMakes `Fetch_Content` module.
+Alternatively, you can use something like [CPM](https://github.com/TheLartians/CPM) which is based on CMake's `Fetch_Content` module.
 
 ````cmake
 CPMAddPackage(
     NAME eventbus
     GITHUB_REPOSITORY DeveloperPaul123/eventbus
-    GIT_TAG #053902d63de5529ee65d965f8b1fb0851eceed24 change this to latest commit
+    GIT_TAG #053902d63de5529ee65d965f8b1fb0851eceed24 change this to latest commit/release tag
 )
 ````
 
@@ -165,9 +165,9 @@ In general, all callback functions **must** return `void`. Currently, `eventbus`
 
 ### Header Only
 
-The library is header only, but `event_bus` is implemented as a singleton. This may pose problems if you need the same singleton instance across application/`dll` boundaries. 
+The library is header only, which is normally not a limitation, but `event_bus` is implemented as a singleton. This may pose problems if you need the same singleton instance across application/`dll` boundaries. 
 
-### Multithreading
+### Multi-threading
 
 Currently this library is not fully thread safe. The `dp::event_bus` class usese a Meyer's singlton which make the instantiation of the event bus thread safe, but other functionality is not yet thread safe. 
 
