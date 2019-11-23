@@ -1,19 +1,22 @@
+![logo](art/Export/logo_no_text.png)
+
 # eventbus
 `eventbus` is a simple, header only C++17 event bus library that doesn't require you to inherit from any sort of `event` class.
 
-- [Design Goals](#design-goals)
-- [Integration](#integration)
-    - [CMake](#cmake)
-    - [vcpkg](#vcpkg)
-  - [Usage](#usage)
-    - [Define An Event Object](#define-an-event-object)
-    - [Registering Handlers](#registering-handlers)
-    - [Firing Events](#firing-events)
-- [Work In Progress Items](#work-in-progress-items)
-- [Limitations](#limitations)
-  - [Header Only](#header-only)
-  - [Multithreading](#multithreading)
-- [Contributing](#contributing)
+- [eventbus](#eventbus)
+  - [Design Goals](#design-goals)
+  - [Integration](#integration)
+      - [CMake](#cmake)
+      - [vcpkg](#vcpkg)
+    - [Usage](#usage)
+      - [Define An Event Object](#define-an-event-object)
+      - [Registering Handlers](#registering-handlers)
+      - [Firing Events](#firing-events)
+  - [Work In Progress Items](#work-in-progress-items)
+  - [Limitations](#limitations)
+    - [Header Only](#header-only)
+    - [Multi-threading](#multi-threading)
+  - [Contributing](#contributing)
 
 ## Design Goals
 
