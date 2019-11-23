@@ -1,4 +1,4 @@
-![logo](art/Export/logo_no_text.png)
+![logo](art/export/logo_no_text.png)
 
 # eventbus
 `eventbus` is a simple, header only C++17 event bus library that doesn't require you to inherit from any sort of `event` class.
