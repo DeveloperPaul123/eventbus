@@ -1,25 +1,43 @@
-![logo](art/export/logo_no_text.png)
+<p align="center">
+  
+  <img src="art/export/logo_no_text.png" alt="logo"/>
+  
+  <a href="https://www.apache.org/licenses/LICENSE-2.0.html">
+    <img src="https://img.shields.io/badge/license-Apache 2.0-blue" alt="License Apache 2.0">
+  </a>
+  
+  <a href="https://github.com/DeveloperPaul123/MHWDatabase/stargazers">
+    <img src="https://img.shields.io/badge/Say%20Thanks-👍-1EAEDB.svg" alt="Say thanks">
+  </a>
+  
+  <a href="https://img.shields.io/discord/652515194572111872">
+    <img alt="Discord" src="https://img.shields.io/discord/652515194572111872">
+  </a>
 
-# eventbus
+</p>
+
+<h1 align="center">
+eventbus
+</h1>
+
 `eventbus` is a simple, header only C++17 event bus library that doesn't require you to inherit from any sort of `event` class.
 
-- [eventbus](#eventbus)
-  - [Design Goals](#design-goals)
-  - [Integration](#integration)
-      - [CMake](#cmake)
-      - [vcpkg](#vcpkg)
-    - [Usage](#usage)
-      - [Define An Event Object](#define-an-event-object)
-      - [Registering Handlers](#registering-handlers)
-      - [Firing Events](#firing-events)
-  - [Work In Progress Items](#work-in-progress-items)
-  - [Limitations](#limitations)
-    - [Header Only](#header-only)
-    - [Multi-threading](#multi-threading)
-  - [Contributing](#contributing)
-  - [License](#license)
-  - [Author](#author)
-  - [Contributors](#contributors)
+- [Design Goals](#design-goals)
+- [Integration](#integration)
+    - [CMake](#cmake)
+    - [vcpkg](#vcpkg)
+  - [Usage](#usage)
+    - [Define An Event Object](#define-an-event-object)
+    - [Registering Handlers](#registering-handlers)
+    - [Firing Events](#firing-events)
+- [Work In Progress Items](#work-in-progress-items)
+- [Limitations](#limitations)
+  - [Header Only](#header-only)
+  - [Multi-threading](#multi-threading)
+- [Contributing](#contributing)
+- [License](#license)
+- [Author](#author)
+- [Contributors](#contributors)
 
 ## Design Goals
 
