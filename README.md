@@ -17,6 +17,9 @@
     - [Header Only](#header-only)
     - [Multi-threading](#multi-threading)
   - [Contributing](#contributing)
+  - [License](#license)
+  - [Author](#author)
+  - [Contributors](#contributors)
 
 ## Design Goals
 
@@ -160,11 +163,11 @@ More example code can be seen in the [demo](https://github.com/DeveloperPaul123/
 
 ## Work In Progress Items
 
-* Thread safety for all operations. 
+- [ ] Thread safety for all operations. 
 
 ## Limitations
 
-In general, all callback functions **must** return `void`. Currently, `eventbus` only supports single argument functions as callbacks, but this may be improved upon at a later time. 
+In general, all callback functions **must** return `void`. Currently, `eventbus` only supports single argument functions as callbacks.
 
 ### Header Only
 
@@ -172,8 +175,21 @@ The library is header only, which is normally not a limitation, but `event_bus` 
 
 ### Multi-threading
 
-Currently this library is not fully thread safe. The `dp::event_bus` class usese a Meyer's singlton which make the instantiation of the event bus thread safe, but other functionality is not yet thread safe. 
+This library is not fully thread safe. The `dp::event_bus` class usese a Meyer's singlton which makes the *instantiation* of the event bus thread safe, but other functionality is not yet thread safe. 
 
 ## Contributing
 
 If you find an issue with this library please file an [issue](https://github.com/DeveloperPaul123/eventbus/issues). Pull requests are also welcome! Contributing guide soon to come. 
+
+## License
+
+The project is licensed under the Apache License Version 2.0. See [LICENSE](LICENSE) for more details. 
+
+## Author
+
+| [<img src="https://avatars0.githubusercontent.com/u/6591180?s=460&v=4" width="100"><br><sub>@DeveloperPaul123</sub>](https://github.com/DeveloperPaul123) |
+|:----:|
+
+## Contributors 
+
+None yet, be the first!
