@@ -2,6 +2,9 @@
   
   <img src="art/export/logo_no_text.png" alt="logo"/>
   
+  <br>
+  <br>
+  
   <a href="https://www.apache.org/licenses/LICENSE-2.0.html">
     <img src="https://img.shields.io/badge/license-Apache 2.0-blue" alt="License Apache 2.0">
   </a>
