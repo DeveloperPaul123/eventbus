@@ -18,22 +18,16 @@ namespace dp
 	{
 	public:
 
-		[[nodiscard]] static event_bus& instance()
-		{
-			static event_bus evt_bus;
-			return evt_bus;
-		}
-		
+	    event_bus() = default;		
 	    template<typename EventType, typename EventHandler>
-	    [[nodiscard]] static handler_registration register_handler(EventHandler &&handler)
+	    [[nodiscard]] handler_registration register_handler(EventHandler &&handler)
 	    {
-	        auto& instance = event_bus::instance();
 			using traits = detail::function_traits<EventHandler>;
 			const auto type_idx = std::type_index(typeid(EventType));
 			handler_registration registration;
 			if constexpr (traits::arity == 0)
 			{
-				auto it = instance.handler_registrations.emplace(type_idx, [handler = std::forward<EventHandler>(handler)](auto)
+				auto it = handler_registrations_.emplace(type_idx, [handler = std::forward<EventHandler>(handler)](auto)
 				{
 					handler();
 				});
@@ -42,7 +36,7 @@ namespace dp
 			}
 			else
 			{
-				auto it = instance.handler_registrations.emplace(type_idx, [func = std::forward<EventHandler>(handler)](auto value)
+				auto it = handler_registrations_.emplace(type_idx, [func = std::forward<EventHandler>(handler)](auto value)
 				{
 					func(std::any_cast<EventType>(value));
 				});
@@ -53,18 +47,17 @@ namespace dp
 	    }
 
 		template<typename EventType, typename ClassType, typename MemberFunction>
-		[[nodiscard]] static handler_registration register_handler(ClassType* class_instance, MemberFunction&& function) noexcept
+		[[nodiscard]] handler_registration register_handler(ClassType* class_instance, MemberFunction&& function) noexcept
 	    {
 			using traits = detail::function_traits<MemberFunction>;
 			static_assert(std::is_same_v<ClassType, std::decay_t<typename traits::owner_type>>, "Member function pointer must match instance type.");
 	    	
-			auto& instance = event_bus::instance();
 			const auto type_idx = std::type_index(typeid(EventType));
 			handler_registration registration;
 
     		if constexpr (traits::arity == 0)
 			{
-				auto it = instance.handler_registrations.emplace(type_idx, [class_instance, function](auto)
+				auto it = handler_registrations_.emplace(type_idx, [class_instance, function](auto)
 					{
 						(class_instance->*function)();
 					});
@@ -73,7 +66,7 @@ namespace dp
 			}
 			else
 			{
-				auto it = instance.handler_registrations.emplace(type_idx, [class_instance, function](auto value)
+				auto it = handler_registrations_.emplace(type_idx, [class_instance, function](auto value)
 					{
 						(class_instance->*function)(std::any_cast<EventType>(value));
 					});
@@ -85,10 +78,9 @@ namespace dp
 	    }
 
 		template<typename EventType>
-	    static void fire_event(const EventType& evt) noexcept
+	    void fire_event(const EventType& evt) noexcept
 	    {
-	        auto& instance = event_bus::instance();
-			auto& func_map = instance.handler_registrations;
+			auto& func_map = handler_registrations_;
 			// only call the functions we need to
 			auto [begin_evt_id, end_evt_id] = func_map.equal_range(std::type_index(typeid(EventType)));
 			for(; begin_evt_id != end_evt_id; ++begin_evt_id)
@@ -101,11 +93,11 @@ namespace dp
 			}
 	    }
 
-		static bool remove_handler(const handler_registration &registration) noexcept
+		bool remove_handler(const handler_registration &registration) noexcept
 	    {
 			if (!registration.handle) { return false; }
 			
-			auto& callbacks = event_bus::instance().handler_registrations;
+			auto& callbacks = handler_registrations_;
 			for(auto it = callbacks.begin(); it != callbacks.end(); ++it)
 			{
 				if(static_cast<const void*>(&(it->second)) == registration.handle)
@@ -118,18 +110,17 @@ namespace dp
 			return false;
 	    }
 
-		static void remove_handlers() noexcept
+		void remove_handlers() noexcept
 	    {
-			event_bus::instance().handler_registrations.clear();
+			handler_registrations_.clear();
 	    }
 
-		[[nodiscard]] static std::size_t handler_count() noexcept
+		[[nodiscard]] std::size_t handler_count() noexcept
 	    {
-			return event_bus::instance().handler_registrations.size();
+			return handler_registrations_.size();
 	    }
 		
 	private:
-	    event_bus() = default;
-		std::unordered_multimap<std::type_index, std::function<void(std::any)>> handler_registrations;
+		std::unordered_multimap<std::type_index, std::function<void(std::any)>> handler_registrations_;
 	};
 }
