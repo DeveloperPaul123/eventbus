@@ -169,4 +169,35 @@ TEST_F(EventBusTestFixture, DeregisterWhileDispatching)
 	EXPECT_EQ(evt_bus.handler_count(), 1);
 }
 
+TEST(EventBus, MultiThreaded) {
+	class simple_listener {
+		int index_;
+	public:
+		simple_listener(int index) : index_(index){
+
+		}
+		void on_event(test_event_type) {
+			std::cout << "simple event " << index_ << "\n";
+		}
+	};
+
+	dp::event_bus evt_bus;
+	simple_listener listener_one(1);
+	simple_listener listener_two(2);
+	
+	auto thread_one = std::thread([&](){
+		std::this_thread::sleep_for(std::chrono::milliseconds(400));
+		evt_bus.register_handler<test_event_type>(&listener_one, &simple_listener::on_event);
+	});
+
+	auto thread_two = std::thread([&]() {
+		evt_bus.register_handler<test_event_type>(&listener_two, &simple_listener::on_event);
+		std::this_thread::sleep_for(std::chrono::milliseconds(400));
+		evt_bus.fire_event(test_event_type{3, "hello", 4.5});
+	});
+
+	thread_one.join();
+	thread_two.join();
+
+	EXPECT_EQ(evt_bus.handler_count(), 2);
 }
