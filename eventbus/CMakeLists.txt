@@ -13,8 +13,7 @@ add_library(dp::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 
 target_include_directories(${PROJECT_NAME} INTERFACE include)
 
-# require C++17
-target_compile_features(${PROJECT_NAME} INTERFACE cxx_std_17)
+target_link_libraries(${PROJECT_NAME} INTERFACE project_options project_warnings)
 
 if(MSVC_IDE)
     add_custom_target(${PROJECT_NAME}.headers SOURCES ${project_headers})
