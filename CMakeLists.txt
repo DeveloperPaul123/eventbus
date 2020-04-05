@@ -5,7 +5,16 @@ project(eventbus)
 set(CXX_STANDARD 17)
 set(CXX_STANDARD_REQUIRED ON)
 
+list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
+
 option(EVENTBUS_BUILD_TESTS "Turn on to build unit tests." OFF)
+
+include(CompilerWarnings)
+add_library(project_warnings INTERFACE)
+set_project_warnings(project_warnings)
+
+add_library(project_options INTERFACE)
+target_compile_features(project_options INTERFACE cxx_std_17)
 
 if(EVENTBUS_BUILD_TESTS)
     set(CPM_DOWNLOAD_LOCATION "${CMAKE_BINARY_DIR}/cmake/CPM.cmake")

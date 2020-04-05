@@ -13,8 +13,7 @@ add_library(dp::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 
 target_include_directories(${PROJECT_NAME} INTERFACE include)
 
-# require C++17
-target_compile_features(${PROJECT_NAME} INTERFACE cxx_std_17)
+target_link_libraries(${PROJECT_NAME} INTERFACE project_options project_warnings)
 
 if(MSVC_IDE)
     add_custom_target(${PROJECT_NAME}.headers SOURCES ${project_headers})
@@ -22,7 +21,6 @@ endif()
 
 if(EVENTBUS_BUILD_TESTS)
     set(project_test_sources
-        test/main.cpp
         test/event_bus_tests.cpp
     )
     set(project_test_name ${PROJECT_NAME}.tests)
@@ -30,6 +28,7 @@ if(EVENTBUS_BUILD_TESTS)
     target_link_libraries(${project_test_name}
         PUBLIC
             gtest
+            gtest_main
             gmock
             ${PROJECT_NAME}
     )
