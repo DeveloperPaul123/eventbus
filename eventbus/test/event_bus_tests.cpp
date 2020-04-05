@@ -173,11 +173,11 @@ TEST(EventBus, MultiThreaded) {
     class simple_listener {
         int index_;
     public:
-        simple_listener(int index) : index_(index){
+        explicit simple_listener(int index) : index_(index){
 
         }
-        void on_event(test_event_type) {
-            std::cout << "simple event " << index_ << "\n";
+        void on_event(const test_event_type &evt) {
+            std::cout << "simple event: " << index_ << " " << evt.event_message << "\n";
             std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         }
     };
@@ -186,15 +186,14 @@ TEST(EventBus, MultiThreaded) {
     simple_listener listener_one(1);
     simple_listener listener_two(2);
     
-    auto thread_one = std::thread([&](){
-        std::this_thread::sleep_for(std::chrono::milliseconds(400));
+    auto thread_one = std::thread([&evt_bus, &listener_one](){
+        evt_bus.fire_event(test_event_type{ 3, "thread_one", 1.0 });
         auto _ = evt_bus.register_handler<test_event_type>(&listener_one, &simple_listener::on_event);
     });
 
-    auto thread_two = std::thread([&]() {
+    auto thread_two = std::thread([&evt_bus, &listener_two]() {
         auto _ = evt_bus.register_handler<test_event_type>(&listener_two, &simple_listener::on_event);
-        std::this_thread::sleep_for(std::chrono::milliseconds(400));
-        evt_bus.fire_event(test_event_type{3, "hello", 4.5});
+        evt_bus.fire_event(test_event_type{3, "thread_two", 2.0});
     });
 
     thread_one.join();
