@@ -25,12 +25,18 @@ if(EVENTBUS_BUILD_TESTS)
         test/main.cpp
         test/event_bus_tests.cpp
     )
-
-    add_executable(${PROJECT_NAME}.tests ${project_test_sources})
-    target_link_libraries(${PROJECT_NAME}.tests
+    set(project_test_name ${PROJECT_NAME}.tests)
+    add_executable(${project_test_name} ${project_test_sources})
+    target_link_libraries(${project_test_name}
         PUBLIC
             gtest
             gmock
             ${PROJECT_NAME}
+    )
+
+    include(GoogleTest)
+    gtest_add_tests(
+        TARGET ${project_test_name}
+        SOURCES ${project_test_sources}
     )
 endif()

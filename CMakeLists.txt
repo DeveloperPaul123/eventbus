@@ -27,6 +27,10 @@ if(EVENTBUS_BUILD_TESTS)
             "INSTALL_GTEST OFF"
             "gtest_force_shared_crt ON"
     )
+    # this needs to be in the top level directory
+    # before any calls to `add_subdirectory()` for
+    # ctest to be set up properly
+    enable_testing()
 endif()
 
 add_subdirectory(eventbus)

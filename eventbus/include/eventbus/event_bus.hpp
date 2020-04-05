@@ -6,6 +6,7 @@
 #include <typeindex>
 #include <functional>
 #include <any>
+#include <mutex>
 
 namespace dp
 {
@@ -18,99 +19,98 @@ namespace dp
 	{
 	public:
 
-		[[nodiscard]] static event_bus& instance()
-		{
-			static event_bus evt_bus;
-			return evt_bus;
-		}
-		
+	    event_bus() = default;		
 	    template<typename EventType, typename EventHandler>
-	    [[nodiscard]] static handler_registration register_handler(EventHandler &&handler)
+	    [[nodiscard]] handler_registration register_handler(EventHandler &&handler)
 	    {
-	        auto& instance = event_bus::instance();
 			using traits = detail::function_traits<EventHandler>;
 			const auto type_idx = std::type_index(typeid(EventType));
 			handler_registration registration;
 			if constexpr (traits::arity == 0)
 			{
-				auto it = instance.handler_registrations.emplace(type_idx, [handler = std::forward<EventHandler>(handler)](auto)
-				{
-					handler();
-				});
+				safe_registrations_access([&]() {
+					auto it = handler_registrations_.emplace(type_idx, [handler = std::forward<EventHandler>(handler)](auto) {
+						handler();
+					});
 
-				registration.handle = static_cast<const void*>(&(it->second));
+					registration.handle = static_cast<const void *>(&(it->second));
+				});
 			}
 			else
 			{
-				auto it = instance.handler_registrations.emplace(type_idx, [func = std::forward<EventHandler>(handler)](auto value)
-				{
-					func(std::any_cast<EventType>(value));
-				});
+				safe_registrations_access([&]() {
+					auto it = handler_registrations_.emplace(type_idx, [func = std::forward<EventHandler>(handler)](auto value) {
+						func(std::any_cast<EventType>(value));
+					});
 
-				registration.handle = static_cast<const void*>(&(it->second));
+					registration.handle = static_cast<const void *>(&(it->second));
+				});
 			}
 			return registration;
 	    }
 
 		template<typename EventType, typename ClassType, typename MemberFunction>
-		[[nodiscard]] static handler_registration register_handler(ClassType* class_instance, MemberFunction&& function) noexcept
+		[[nodiscard]] handler_registration register_handler(ClassType* class_instance, MemberFunction&& function) noexcept
 	    {
 			using traits = detail::function_traits<MemberFunction>;
 			static_assert(std::is_same_v<ClassType, std::decay_t<typename traits::owner_type>>, "Member function pointer must match instance type.");
 	    	
-			auto& instance = event_bus::instance();
 			const auto type_idx = std::type_index(typeid(EventType));
 			handler_registration registration;
 
     		if constexpr (traits::arity == 0)
 			{
-				auto it = instance.handler_registrations.emplace(type_idx, [class_instance, function](auto)
-					{
+				safe_registrations_access([&]() {
+					auto it = handler_registrations_.emplace(type_idx, [class_instance, function](auto) {
 						(class_instance->*function)();
 					});
 
-				registration.handle = static_cast<const void*>(&(it->second));
+					registration.handle = static_cast<const void *>(&(it->second));
+				});
 			}
 			else
 			{
-				auto it = instance.handler_registrations.emplace(type_idx, [class_instance, function](auto value)
-					{
+				safe_registrations_access([&]() {
+					auto it = handler_registrations_.emplace(type_idx, [class_instance, function](auto value) {
 						(class_instance->*function)(std::any_cast<EventType>(value));
 					});
 
-				registration.handle = static_cast<const void*>(&(it->second));
-
+					registration.handle = static_cast<const void *>(&(it->second));
+				});
 			}
 			return registration;
 	    }
 
 		template<typename EventType>
-	    static void fire_event(const EventType& evt) noexcept
+	    void fire_event(const EventType& evt) noexcept
 	    {
-	        auto& instance = event_bus::instance();
-			auto& func_map = instance.handler_registrations;
-			// only call the functions we need to
-			auto [begin_evt_id, end_evt_id] = func_map.equal_range(std::type_index(typeid(EventType)));
-			for(; begin_evt_id != end_evt_id; ++begin_evt_id)
-			{
-				try
+			safe_registrations_access([&]() {
+				// only call the functions we need to
+				auto [begin_evt_id, end_evt_id] = handler_registrations_.equal_range(std::type_index(typeid(EventType)));
+				for (; begin_evt_id != end_evt_id; ++begin_evt_id)
 				{
-					begin_evt_id->second(std::any_cast<EventType>(evt));
+					try
+					{
+						begin_evt_id->second(std::any_cast<EventType>(evt));
+					}
+					catch (std::bad_any_cast &)
+					{
+						// Ignore for now
+					} 
 				}
-				catch(std::bad_any_cast&){} // Ignore for now
-			}
-	    }
+			});
+		}
 
-		static bool remove_handler(const handler_registration &registration) noexcept
+		bool remove_handler(const handler_registration &registration) noexcept
 	    {
 			if (!registration.handle) { return false; }
-			
-			auto& callbacks = event_bus::instance().handler_registrations;
-			for(auto it = callbacks.begin(); it != callbacks.end(); ++it)
+
+			std::lock_guard<std::mutex> lock(registration_mutex_);
+			for(auto it = handler_registrations_.begin(); it != handler_registrations_.end(); ++it)
 			{
 				if(static_cast<const void*>(&(it->second)) == registration.handle)
 				{
-					callbacks.erase(it);
+					handler_registrations_.erase(it);
 					return true;
 				}
 			}
@@ -118,18 +118,32 @@ namespace dp
 			return false;
 	    }
 
-		static void remove_handlers() noexcept
+		void remove_handlers() noexcept
 	    {
-			event_bus::instance().handler_registrations.clear();
+			std::lock_guard<std::mutex> lock(registration_mutex_);
+			handler_registrations_.clear();
 	    }
 
-		[[nodiscard]] static std::size_t handler_count() noexcept
+		[[nodiscard]] std::size_t handler_count() noexcept
 	    {
-			return event_bus::instance().handler_registrations.size();
+			std::lock_guard<std::mutex> lock(registration_mutex_);
+			return handler_registrations_.size();
 	    }
 		
 	private:
-	    event_bus() = default;
-		std::unordered_multimap<std::type_index, std::function<void(std::any)>> handler_registrations;
+		std::mutex registration_mutex_;
+		std::unordered_multimap<std::type_index, std::function<void(std::any)>> handler_registrations_;
+
+		template<typename Callable>
+		void safe_registrations_access(Callable&& callable) {
+			try {
+				// if this fails, an exception will be thrown.
+				std::lock_guard<std::mutex> lock(registration_mutex_);
+				callable();
+			}
+			catch(std::system_error&) {
+				// do nothing
+			}
+		}
 	};
 }
