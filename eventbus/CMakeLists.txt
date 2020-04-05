@@ -21,7 +21,6 @@ endif()
 
 if(EVENTBUS_BUILD_TESTS)
     set(project_test_sources
-        test/main.cpp
         test/event_bus_tests.cpp
     )
     set(project_test_name ${PROJECT_NAME}.tests)
@@ -29,6 +28,7 @@ if(EVENTBUS_BUILD_TESTS)
     target_link_libraries(${project_test_name}
         PUBLIC
             gtest
+            gtest_main
             gmock
             ${PROJECT_NAME}
     )
