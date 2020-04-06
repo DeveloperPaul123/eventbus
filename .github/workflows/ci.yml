@@ -53,7 +53,7 @@ jobs:
       # - name: update apt-get
       #   run: apt-get update && apt-get install software-properties-common -y && apt-add-repository 'deb https://apt.kitware.com/ubuntu/ bionic main' && apt-get update
       - name: set up build env
-        run: apt-get update && apt purge cmake -y && apt-get install build-essential -y
+        run: sudo apt-get update && sudo apt purge cmake -y && sudo apt-get install build-essential -y
       # - name: build cmake
       #   run: wget https://github.com/Kitware/CMake/releases/download/v${{ matrix.cmake-version }}/cmake-${{ matrix.cmake-version }}.tar.gz && tar -zxvf cmake-${{ matrix.cmake-version }}.tar.gz && cd cmake-${{matrix.cmake-version}} && ./bootstrap && make && make install
       - name: Setup cmake
