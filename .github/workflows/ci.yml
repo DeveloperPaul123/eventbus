@@ -43,18 +43,25 @@ jobs:
       matrix:
         version: [gcc7, gcc8, gcc9]
         cpp: [17]
+        cmake-version: [3.17.0]
     env:
       CPP_STANDARD: ${{ matrix.cpp }}
     steps:
       - uses: actions/checkout@v2
-      - name: install sudo
-        run: apt-get update && apt-get -y install sudo
-      - name: add kitware key
-        run: wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | sudo apt-key add -
-      - name: update apt-get
-        run: apt-get install software-properties-common -y && sudo apt-add-repository 'deb https://apt.kitware.com/ubuntu/ bionic main' && sudo apt-get update
+      # - name: add kitware key
+      #   run: apt-get install apt-transport-https ca-certificates gnupg wget && wget -qO - https://apt.kitware.com/keys/kitware-archive-latest.asc | apt-key add -
+      # - name: update apt-get
+      #   run: apt-get update && apt-get install software-properties-common -y && apt-add-repository 'deb https://apt.kitware.com/ubuntu/ bionic main' && apt-get update
       - name: set up build env
-        run: sudo apt-get install cmake build-essential -y
+        run: apt-get update && apt purge cmake -y && apt-get install build-essential -y
+      # - name: build cmake
+      #   run: wget https://github.com/Kitware/CMake/releases/download/v${{ matrix.cmake-version }}/cmake-${{ matrix.cmake-version }}.tar.gz && tar -zxvf cmake-${{ matrix.cmake-version }}.tar.gz && cd cmake-${{matrix.cmake-version}} && ./bootstrap && make && make install
+      - name: Setup cmake
+        uses: jwlawson/actions-setup-cmake@v1.0
+        with:
+          cmake-version: '3.17.0'
+      - name: check cmake version
+        run: cmake --version
       - name: build
         run: cmake -DEVENTBUS_BUILD_TESTS:BOOL=ON . && cmake --build . --config Debug
       - name: run tests
