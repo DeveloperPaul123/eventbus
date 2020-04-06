@@ -47,10 +47,14 @@ jobs:
       CPP_STANDARD: ${{ matrix.cpp }}
     steps:
       - uses: actions/checkout@v2
+      - name: install sudo
+        run: apt-get update && apt-get -y install sudo
+      - name: add kitware key
+        run: wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | sudo apt-key add -
       - name: update apt-get
-        run: sudo apt-get update && sudo apt-get upgrade -y && sudo apt-get autoremove -y
+        run: apt-get install software-properties-common -y && sudo apt-add-repository 'deb https://apt.kitware.com/ubuntu/ bionic main' && sudo apt-get update
       - name: set up build env
-        run: sudo apt-get install cmake build-essentials
+        run: sudo apt-get install cmake build-essential -y
       - name: build
         run: cmake -DEVENTBUS_BUILD_TESTS:BOOL=ON . && cmake --build . --config Debug
       - name: run tests
