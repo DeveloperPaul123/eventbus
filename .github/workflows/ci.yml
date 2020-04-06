@@ -1,6 +1,6 @@
 # This is a basic workflow to help you get started with Actions
 
-name: Windows Build
+name: CI
 
 # Controls when the action will run. Triggers the workflow on push or pull request
 # events but only for the master branch
@@ -21,18 +21,37 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-2019, windows-2016]
-        cpp: [11, 14, 17]
+        os: [windows-2019]
+        cpp: [17]
         include:
           - os: windows-2019
             name: vs2019
-          - os: windows-2016
-            name: vs2017
     env:
       CPP_STANDARD: ${{ matrix.cpp }}
     steps:
       - uses: actions/checkout@v2
       - name: build
         run: cmake -DEVENTBUS_BUILD_TESTS:BOOL=ON . && cmake --build . --config Debug
-      - name: run
+      - name: run tests
+        run: ctest -V -C Debug
+
+  gcc:
+    name: ${{ matrix.version }} C++${{ matrix.cpp }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        version: [gcc7, gcc8, gcc9]
+        cpp: [17]
+    env:
+      CPP_STANDARD: ${{ matrix.cpp }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: update apt-get
+        run: sudo apt-get update && sudo apt-get upgrade -y && sudo apt-get autoremove -y
+      - name: set up build env
+        run: sudo apt-get install cmake build-essentials
+      - name: build
+        run: cmake -DEVENTBUS_BUILD_TESTS:BOOL=ON . && cmake --build . --config Debug
+      - name: run tests
         run: ctest -V -C Debug
