@@ -102,13 +102,15 @@ void event_callback(event_type evt)
     // event callback logic...
 }
 
-dp::event_bus::register_handler<event_type>(&event_callback)
+dp::event_bus evt_bus;
+evt_bus.register_handler<event_type>(&event_callback)
 ````
 
 #### Lambda
 
 ````cpp
-dp::event_bus::register_handler<event_type>([](const event_type& evt)
+dp::event_bus evt_bus;
+evt_bus.register_handler<event_type>([](const event_type& evt)
 {
     // logic code...
 });
