@@ -1,5 +1,6 @@
 #include <eventbus/event_bus.hpp>
 #include <atomic>
+#include <thread>
 
 #include <gtest/gtest.h>
 
