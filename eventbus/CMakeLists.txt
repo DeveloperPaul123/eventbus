@@ -13,7 +13,7 @@ add_library(dp::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 
 target_include_directories(${PROJECT_NAME} INTERFACE include)
 
-target_link_libraries(${PROJECT_NAME} INTERFACE project_options project_warnings)
+target_link_libraries(${PROJECT_NAME} INTERFACE project_options)
 
 if(MSVC_IDE)
     add_custom_target(${PROJECT_NAME}.headers SOURCES ${project_headers})
