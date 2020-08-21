@@ -19,7 +19,7 @@ namespace dp
     {
     public:
 
-        event_bus() = default;		
+        event_bus() = default;
         template<typename EventType, typename EventHandler>
         [[nodiscard]] handler_registration register_handler(EventHandler &&handler)
         {
