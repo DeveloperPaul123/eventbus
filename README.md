@@ -9,7 +9,7 @@
     <img src="https://img.shields.io/badge/license-Apache 2.0-blue" alt="License Apache 2.0">
   </a>
   
-  <a href="https://github.com/DeveloperPaul123/MHWDatabase/stargazers">
+  <a href="https://github.com/DeveloperPaul123/eventbus/stargazers">
     <img src="https://img.shields.io/badge/Say%20Thanks-👍-1EAEDB.svg" alt="Say thanks">
   </a>
   
