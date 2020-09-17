@@ -13,30 +13,22 @@ env:
 
 jobs:
   build:
-    runs-on: windows-latest
-    
+    runs-on: ${{ matrix.os }}
+    name: ${{ matrix.version }} C++${{ matrix.cpp }}
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        os: [windows-latest]
+        cpp: [17]
+        version: [vs2019, clangcl]
+    env:
+      CPP_STANDARD: ${{ matrix.cpp }}
     steps:
     - uses: actions/checkout@v1
     
     - name: Configure
       run: cmake -S . -B build
-
-    - name: Build
-      run: cmake --build build --config Debug -j4
-
-    - name: Run tests
-      run: |
-        cd build
-        ctest --build-config Debug
-
-  build-clang:
-    runs-on: windows-latest
-    
-    steps:
-    - uses: actions/checkout@v1
-    
-    - name: Configure
-      run: cmake -S . -B build -T clangcl
 
     - name: Build
       run: cmake --build build --config Debug -j4
