@@ -7,13 +7,17 @@ set(project_headers
     include/eventbus/event_bus.hpp
 )
 
+# System threading library 
+# Required for multithreading testing
+find_package(Threads REQUIRED)
+
 add_library(${PROJECT_NAME} INTERFACE)
 add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 add_library(dp::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 
 target_include_directories(${PROJECT_NAME} INTERFACE include)
 
-target_link_libraries(${PROJECT_NAME} INTERFACE project_options)
+target_link_libraries(${PROJECT_NAME} INTERFACE project_options Threads::Threads)
 
 if(MSVC_IDE)
     add_custom_target(${PROJECT_NAME}.headers SOURCES ${project_headers})

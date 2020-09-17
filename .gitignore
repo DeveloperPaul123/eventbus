@@ -1,3 +1,5 @@
 /build*
 .vscode/
 /act*
+.vs/*
+out/

@@ -64,9 +64,9 @@ int main()
     evt_bus.fire_event(third_event{ 13.0 });
     
     
-    const auto other_event_reg = evt_bus.register_handler<other_event>([](const other_event& evt) {std::cout << "first other event handler says: " << evt.message << std::endl; });
-    const auto other_event_second_reg = evt_bus.register_handler<other_event>([](const other_event& evt){std::cout << "second other event handler says: " << evt.id << " " << evt.message << std::endl;});
-    const auto dmy_evt_first_reg = evt_bus.register_handler<dummy_event>([](const dummy_event& evt) {std::cout << "third event handler says: " << evt.message << std::endl;});
+    const auto other_event_reg = evt_bus.register_handler<other_event>([](const other_event& other_evt) {std::cout << "first other event handler says: " << other_evt.message << std::endl; });
+    const auto other_event_second_reg = evt_bus.register_handler<other_event>([](const other_event& other_evt){std::cout << "second other event handler says: " << other_evt.id << " " << other_evt.message << std::endl;});
+    const auto dmy_evt_first_reg = evt_bus.register_handler<dummy_event>([](const dummy_event& dmy_evt) {std::cout << "third event handler says: " << dmy_evt.message << std::endl;});
     const auto dmy_evt_pmr_reg = evt_bus.register_handler<dummy_event>(&callback_obj , &my_callback_object::on_event_fired);
     const auto thrid_event_reg_pmr = evt_bus.register_handler<third_event>(&callback_obj, &my_callback_object::on_third_event);
 
@@ -87,5 +87,15 @@ int main()
     evt_bus.fire_event(third_event{});
     
     std::cout << "callback count: " << callback_obj.get_event_count() << std::endl;
+    std::cout << "handler count: " << evt_bus.handler_count() << "\n";
+    std::cout << "removing handlers..." << "\n";
+
+    evt_bus.remove_handler(reg);
+    evt_bus.remove_handler(other_event_second_reg);
+    evt_bus.remove_handler(empty_event_handler);
+    evt_bus.remove_handler(dmy_evt_first_reg);
+    evt_bus.remove_handler(dmy_evt_pmr_reg);
+    evt_bus.remove_handler(thrid_event_reg_pmr);
+
     return 0;
 }

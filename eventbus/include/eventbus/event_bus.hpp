@@ -7,6 +7,8 @@
 #include <functional>
 #include <any>
 #include <mutex>
+#include <atomic>
+#include <thread>
 
 namespace dp
 {
@@ -14,14 +16,14 @@ namespace dp
     {
         const void* handle{ nullptr };
     };
-    
-    class event_bus 
+
+    class event_bus
     {
     public:
 
         event_bus() = default;
         template<typename EventType, typename EventHandler>
-        [[nodiscard]] handler_registration register_handler(EventHandler &&handler)
+        [[nodiscard]] handler_registration register_handler(EventHandler&& handler)
         {
             using traits = detail::function_traits<EventHandler>;
             const auto type_idx = std::type_index(typeid(EventType));
@@ -33,8 +35,8 @@ namespace dp
                         handler();
                     });
 
-                    registration.handle = static_cast<const void *>(&(it->second));
-                });
+                    registration.handle = static_cast<const void*>(&(it->second));
+                    });
             }
             else
             {
@@ -43,8 +45,8 @@ namespace dp
                         func(std::any_cast<EventType>(value));
                     });
 
-                    registration.handle = static_cast<const void *>(&(it->second));
-                });
+                    registration.handle = static_cast<const void*>(&(it->second));
+                    });
             }
             return registration;
         }
@@ -54,29 +56,29 @@ namespace dp
         {
             using traits = detail::function_traits<MemberFunction>;
             static_assert(std::is_same_v<ClassType, std::decay_t<typename traits::owner_type>>, "Member function pointer must match instance type.");
-            
+
             const auto type_idx = std::type_index(typeid(EventType));
-            handler_registration registration;
+            handler_registration registration{};
 
             if constexpr (traits::arity == 0)
             {
                 safe_registrations_access([&]() {
                     auto it = handler_registrations_.emplace(type_idx, [class_instance, function](auto) {
                         (class_instance->*function)();
-                    });
+                        });
 
-                    registration.handle = static_cast<const void *>(&(it->second));
-                });
+                    registration.handle = static_cast<const void*>(&(it->second));
+                    });
             }
             else
             {
                 safe_registrations_access([&]() {
                     auto it = handler_registrations_.emplace(type_idx, [class_instance, function](auto value) {
                         (class_instance->*function)(std::any_cast<EventType>(value));
-                    });
+                        });
 
-                    registration.handle = static_cast<const void *>(&(it->second));
-                });
+                    registration.handle = static_cast<const void*>(&(it->second));
+                    });
             }
             return registration;
         }
@@ -93,22 +95,22 @@ namespace dp
                     {
                         begin_evt_id->second(std::any_cast<EventType>(evt));
                     }
-                    catch (std::bad_any_cast &)
+                    catch (std::bad_any_cast&)
                     {
                         // Ignore for now
-                    } 
+                    }
                 }
-            });
+                });
         }
 
-        bool remove_handler(const handler_registration &registration) noexcept
+        bool remove_handler(const handler_registration& registration) noexcept
         {
             if (!registration.handle) { return false; }
 
-            std::lock_guard<std::mutex> lock(registration_mutex_);
-            for(auto it = handler_registrations_.begin(); it != handler_registrations_.end(); ++it)
+            std::lock_guard<mutex_type> lock(registration_mutex_);
+            for (auto it = handler_registrations_.begin(); it != handler_registrations_.end(); ++it)
             {
-                if(static_cast<const void*>(&(it->second)) == registration.handle)
+                if (static_cast<const void*>(&(it->second)) == registration.handle)
                 {
                     handler_registrations_.erase(it);
                     return true;
@@ -120,28 +122,54 @@ namespace dp
 
         void remove_handlers() noexcept
         {
-            std::lock_guard<std::mutex> lock(registration_mutex_);
+            std::lock_guard<mutex_type> lock(registration_mutex_);
             handler_registrations_.clear();
         }
 
         [[nodiscard]] std::size_t handler_count() noexcept
         {
-            std::lock_guard<std::mutex> lock(registration_mutex_);
+            std::lock_guard<mutex_type> lock(registration_mutex_);
             return handler_registrations_.size();
         }
-        
+
     private:
-        std::mutex registration_mutex_;
+        class mutex : public std::mutex
+        {
+        public:
+            void lock()
+            {
+                std::mutex::lock();
+                lock_holder_ = std::this_thread::get_id();
+            }
+
+            void unlock()
+            {
+                lock_holder_ = std::thread::id();
+                std::mutex::unlock();
+            }
+
+            [[nodiscard]] bool locked_by_caller() const
+            {
+                return lock_holder_ == std::this_thread::get_id();
+            }
+
+        private:
+            std::atomic<std::thread::id> lock_holder_{};
+        };
+
+        using mutex_type = mutex;
+        mutex_type registration_mutex_;
         std::unordered_multimap<std::type_index, std::function<void(std::any)>> handler_registrations_;
 
         template<typename Callable>
         void safe_registrations_access(Callable&& callable) {
             try {
-                // if this fails, an exception will be thrown.
-                std::lock_guard<std::mutex> lock(registration_mutex_);
+                if(registration_mutex_.locked_by_caller()) return;
+                // if this fails, an exception may be thrown.
+                std::lock_guard<mutex_type> lock(registration_mutex_);
                 callable();
             }
-            catch(std::system_error&) {
+            catch (std::system_error&) {
                 // do nothing
             }
         }
