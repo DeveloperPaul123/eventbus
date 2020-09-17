@@ -16,7 +16,13 @@
   <a href="https://img.shields.io/discord/652515194572111872">
     <img alt="Discord" src="https://img.shields.io/discord/652515194572111872">
   </a>
-
+  
+  <a href="https://github.com/DeveloperPaul123/eventbus/actions">
+    <img alt="Windows" src="https://github.com/DeveloperPaul123/eventbus/workflows/Windows/badge.svg">
+  </a>
+  <a href="https://github.com/DeveloperPaul123/eventbus/actions">
+    <img alt="Ubuntu" src="https://github.com/DeveloperPaul123/eventbus/workflows/Ubuntu/badge.svg">
+  </a>
 </p>
 
 <h1 align="center">
