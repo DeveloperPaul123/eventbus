@@ -7,8 +7,14 @@ env:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
-    
+    runs-on: ${{matrix.os}}
+    name: ${{ matrix.name }} C++${{ matrix.cpp }}
+    matrix:
+      os: [ubuntu-latest, ubuntu-20.04]
+      cpp: [17]
+      version: [gcc7, gcc8, gcc9, clang]
+    env:
+      CPP_STANDARD: ${{ matrix.cpp }}
     steps:
     - uses: actions/checkout@v1
     
