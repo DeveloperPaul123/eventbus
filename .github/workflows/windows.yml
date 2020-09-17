@@ -1,0 +1,47 @@
+name: Windows
+
+on:
+  push:
+    branches:
+      - master
+      - develop
+  pull_request:
+    branches: [ develop ]
+
+env:
+  CTEST_OUTPUT_ON_FAILURE: 1
+
+jobs:
+  build:
+    runs-on: windows-latest
+    
+    steps:
+    - uses: actions/checkout@v1
+    
+    - name: Configure
+      run: cmake -S . -B build
+
+    - name: Build
+      run: cmake --build build --config Debug -j4
+
+    - name: Run tests
+      run: |
+        cd build
+        ctest --build-config Debug
+
+  build-clang:
+    runs-on: windows-latest
+    
+    steps:
+    - uses: actions/checkout@v1
+    
+    - name: Configure
+      run: cmake -S . -B build -T clangcl
+
+    - name: Build
+      run: cmake --build build --config Debug -j4
+
+    - name: Run tests
+      run: |
+        cd build
+        ctest --build-config Debug
