@@ -8,7 +8,7 @@ env:
 jobs:
   build:
     runs-on: ${{matrix.os}}
-    name: ${{ matrix.name }} C++${{ matrix.cpp }}
+    name: ${{ matrix.version }} C++${{ matrix.cpp }}
     strategy:
       fail-fast: false
       max-parallel: 2
