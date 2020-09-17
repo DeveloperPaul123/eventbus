@@ -22,13 +22,18 @@ jobs:
         os: [windows-latest]
         cpp: [17]
         version: [vs2019, clangcl]
+        include:
+          - version: vs2019
+            generator: '"Visual Studio 16 2019"'
+          - version: clangcl
+            generator: '"Visual Studio 16 2019" -T "clangcl"'
     env:
       CPP_STANDARD: ${{ matrix.cpp }}
     steps:
     - uses: actions/checkout@v1
     
     - name: Configure
-      run: cmake -S . -B build
+      run: cmake -G ${{ matrix.generator }} -S . -B build
 
     - name: Build
       run: cmake --build build --config Debug -j4
