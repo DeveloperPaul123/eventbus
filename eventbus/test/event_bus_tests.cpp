@@ -11,7 +11,7 @@ struct test_event_type
     double data_value{ 1.0 };
 };
 
-inline std::ostream& operator<<(std::ostream& out, const test_event_type &evt)
+inline std::ostream& operator<<(std::ostream& out, const test_event_type& evt)
 {
     out << "id: " << evt.id << " msg: " << evt.event_message << " data: " << evt.data_value;
     return out;
@@ -19,40 +19,27 @@ inline std::ostream& operator<<(std::ostream& out, const test_event_type &evt)
 
 class event_handler_counter
 {
-    std::atomic<unsigned int> event_count_ = 0;
+    std::atomic<unsigned int> event_count_{ 0 };
 public:
     event_handler_counter() = default;
-    [[nodiscard]] unsigned int get_count() const { return event_count_.load(); };
+    [[nodiscard]] unsigned int get_count() const { return event_count_.load(); }
     void on_test_event()
     {
         ++event_count_;
     }
 };
 
-class EventBusTestFixture : public ::testing::Test
-{
-protected:
-    event_handler_counter counter;
-    dp::handler_registration counter_event_registration_;
-    dp::event_bus evt_bus;
-    void SetUp() override
-    {
-        counter_event_registration_ = evt_bus.register_handler<test_event_type>(&counter, &event_handler_counter::on_test_event);
-    }
-
-    void TearDown() override
-    {
-        evt_bus.remove_handler(counter_event_registration_);
-    }
-};
-
-void free_function_callback(const test_event_type &type_event)
+void free_function_callback(const test_event_type& type_event)
 {
     std::cout << "Free function callback : " << type_event << "\n";
 }
 
-TEST_F(EventBusTestFixture, LambdaRegistrationAndDeregistration)
+TEST(EventBus, LambdaRegistrationAndDeregistration)
 {
+    dp::event_bus evt_bus;
+    event_handler_counter counter;
+    auto registration = evt_bus.register_handler<test_event_type>(&counter, &event_handler_counter::on_test_event);
+
     test_event_type test_event{ 1, "event message", 32.56 };
     const auto lambda_one_reg = evt_bus.register_handler<test_event_type>([]() {std::cout << "Lambda 1\n"; });
     const auto lambda_two_reg = evt_bus.register_handler<test_event_type>([&test_event](const test_event_type& evt)
@@ -93,77 +80,82 @@ TEST_F(EventBusTestFixture, LambdaRegistrationAndDeregistration)
     EXPECT_EQ(evt_bus.handler_count(), 1);
 }
 
-TEST_F(EventBusTestFixture, RegisterWhileDispatching) 
+TEST(EventBus, RegisterWhileDispatching)
 {
-    struct nefarious_event_listener 
+    struct nefarious_event_listener
     {
         dp::event_bus* evt_bus;
-        void on_event(test_event_type evt) 
+        void on_event(test_event_type) const
         {
-            nefarious_event_listener listener;
+            nefarious_event_listener listener{};
             listener.evt_bus = evt_bus;
-            if(evt_bus) 
+            if (evt_bus)
             {
                 auto _ = evt_bus->register_handler<test_event_type>(&listener, &nefarious_event_listener::on_event);
             }
         }
     };
 
-    dp::handler_registration registration;
-    {
-        nefarious_event_listener listener;
-        listener.evt_bus = &evt_bus;
-        registration = evt_bus.register_handler<test_event_type>(&listener, &nefarious_event_listener::on_event);
-    }
+    dp::event_bus evt_bus;
+    event_handler_counter counter;
+    const auto registration = evt_bus.register_handler<test_event_type>(&counter, &event_handler_counter::on_test_event);
 
-    for(auto i = 0; i < 40; ++i) {
-        evt_bus.fire_event(test_event_type{2, "test event", 1.3});
-        std::cout << "Handler count: " << evt_bus.handler_count() << "\n";
+    nefarious_event_listener listener{};
+    listener.evt_bus = &evt_bus;
+    const dp::handler_registration nef_registration = evt_bus.register_handler<test_event_type>(
+        &listener, &nefarious_event_listener::on_event);
+
+    for (auto i = 0; i < 40; ++i) {
+        evt_bus.fire_event(test_event_type{ 2, "test event", 1.3 });
+        std::cout << "Loop " << i << " Handler count: " << evt_bus.handler_count() << "\n";
         // count should be 2 because we registered the first object and the 
         // test fixture class is registered as well (the counter).
         ASSERT_EQ(evt_bus.handler_count(), 2);
     }
 
     ASSERT_TRUE(evt_bus.remove_handler(registration));
+    ASSERT_TRUE(evt_bus.remove_handler(nef_registration));
 }
 
-TEST_F(EventBusTestFixture, DeregisterWhileDispatching)
+TEST(EventBus, DeregisterWhileDispatching)
 {
+    dp::event_bus evt_bus;
+    event_handler_counter counter;
+    auto registration = evt_bus.register_handler<test_event_type>(&counter, &event_handler_counter::on_test_event);
 
     struct deregister_while_dispatch_listener {
-        dp::event_bus *evt_bus{nullptr};
-        std::vector<dp::handler_registration> *registrations{nullptr};
+        dp::event_bus* evt_bus{ nullptr };
+        std::vector<dp::handler_registration>* registrations{ nullptr };
         void on_event(test_event_type)
         {
-            if(evt_bus && registrations) {
+            if (evt_bus && registrations) {
                 std::for_each(registrations->begin(), registrations->end(), [&](auto reg) {
                     evt_bus->remove_handler(reg);
-                });
+                    });
             }
         }
     };
 
     std::vector<dp::handler_registration> registrations;
     std::vector<deregister_while_dispatch_listener> listeners;
-    for(auto i = 0; i < 20; ++i) {
+    for (auto i = 0; i < 20; ++i) {
         deregister_while_dispatch_listener listener;
         auto reg = evt_bus.register_handler<test_event_type>(&listener, &deregister_while_dispatch_listener::on_event);
         listeners.emplace_back(listener);
         registrations.emplace_back(reg);
     }
-    
+
     listeners[0].evt_bus = &evt_bus;
     listeners[0].registrations = &registrations;
 
-    for(auto i = 0; i < 40; ++i) {
-        evt_bus.fire_event(test_event_type{3, "test event", 3.4});
-        std::cout << "Handler count: " << evt_bus.handler_count() << "\n";
+    for (auto i = 0; i < 40; ++i) {
+        evt_bus.fire_event(test_event_type{ 3, "test event", 3.4 });
         // add 1 because of the test fixture.
         EXPECT_EQ(evt_bus.handler_count(), listeners.size() + 1);
     }
 
     // remove all the registrations
-    for(auto reg: registrations) {
+    for (auto reg : registrations) {
         EXPECT_TRUE(evt_bus.remove_handler(reg));
     }
 
@@ -174,10 +166,10 @@ TEST(EventBus, MultiThreaded) {
     class simple_listener {
         int index_;
     public:
-        explicit simple_listener(int index) : index_(index){
+        explicit simple_listener(int index) : index_(index) {
 
         }
-        void on_event(const test_event_type &evt) {
+        void on_event(const test_event_type& evt) {
             std::cout << "simple event: " << index_ << " " << evt.event_message << "\n";
             std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         }
@@ -186,16 +178,16 @@ TEST(EventBus, MultiThreaded) {
     dp::event_bus evt_bus;
     simple_listener listener_one(1);
     simple_listener listener_two(2);
-    
-    auto thread_one = std::thread([&evt_bus, &listener_one](){
+
+    auto thread_one = std::thread([&evt_bus, &listener_one]() {
         evt_bus.fire_event(test_event_type{ 3, "thread_one", 1.0 });
         auto _ = evt_bus.register_handler<test_event_type>(&listener_one, &simple_listener::on_event);
-    });
+        });
 
     auto thread_two = std::thread([&evt_bus, &listener_two]() {
         auto _ = evt_bus.register_handler<test_event_type>(&listener_two, &simple_listener::on_event);
-        evt_bus.fire_event(test_event_type{3, "thread_two", 2.0});
-    });
+        evt_bus.fire_event(test_event_type{ 3, "thread_two", 2.0 });
+        });
 
     thread_one.join();
     thread_two.join();
