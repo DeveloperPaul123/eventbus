@@ -1,6 +1,6 @@
 <p align="center">
   
-  <img src="art/export/logo_no_text.png" alt="logo"/>
+  <img src="https://socialify.git.ci/DeveloperPaul123/eventbus/image?font=Bitter&forks=1&language=1&logo=https%3A%2F%2Fraw.githubusercontent.com%2FDeveloperPaul123%2Feventbus%2Fdevelop%2Fart%2Fexport%2Fbus_icon.svg&pattern=Circuit%20Board&stargazers=1&theme=Dark" alt="eventbus" width="960" height="640" />
   
   <br>
   <br>
