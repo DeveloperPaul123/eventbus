@@ -25,10 +25,6 @@
   </a>
 </p>
 
-<h1 align="center">
-eventbus
-</h1>
-
 `eventbus` is a simple, header only C++17 event bus library that doesn't require you to inherit from any sort of `event` class.
 
 - [Design Goals](#design-goals)
