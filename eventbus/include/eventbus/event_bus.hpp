@@ -6,15 +6,31 @@
 #include <typeindex>
 #include <functional>
 #include <any>
-#include <mutex>
+#include <shared_mutex>
 #include <atomic>
 #include <thread>
+#include <utility>
 
 namespace dp
 {
-    struct handler_registration
+    class event_bus;
+
+    class handler_registration
     {
-        const void* handle{ nullptr };
+        const void* handle_{ nullptr };
+        dp::event_bus* event_bus_{ nullptr };
+    public:
+        handler_registration(const handler_registration& other) = delete;
+        handler_registration(handler_registration&& other) noexcept;
+        handler_registration& operator=(const handler_registration& other) = delete;
+        handler_registration& operator=(handler_registration&& other) noexcept;
+        ~handler_registration();
+
+        [[nodiscard]] const void* handle() const;
+        void unregister() const noexcept;
+    protected:
+        handler_registration(const void* handle, dp::event_bus* bus);
+        friend class event_bus;
     };
 
     class event_bus
@@ -27,28 +43,28 @@ namespace dp
         {
             using traits = detail::function_traits<EventHandler>;
             const auto type_idx = std::type_index(typeid(EventType));
-            handler_registration registration;
+            const void* handle;
             if constexpr (traits::arity == 0)
             {
-                safe_registrations_access([&]() {
+                safe_unique_registrations_access([&]() {
                     auto it = handler_registrations_.emplace(type_idx, [handler = std::forward<EventHandler>(handler)](auto) {
                         handler();
                     });
 
-                    registration.handle = static_cast<const void*>(&(it->second));
+                    handle = static_cast<const void*>(&(it->second));
                     });
             }
             else
             {
-                safe_registrations_access([&]() {
+                safe_unique_registrations_access([&]() {
                     auto it = handler_registrations_.emplace(type_idx, [func = std::forward<EventHandler>(handler)](auto value) {
                         func(std::any_cast<EventType>(value));
                     });
 
-                    registration.handle = static_cast<const void*>(&(it->second));
+                    handle = static_cast<const void*>(&(it->second));
                     });
             }
-            return registration;
+            return { handle, this };
         }
 
         template<typename EventType, typename ClassType, typename MemberFunction>
@@ -58,35 +74,35 @@ namespace dp
             static_assert(std::is_same_v<ClassType, std::decay_t<typename traits::owner_type>>, "Member function pointer must match instance type.");
 
             const auto type_idx = std::type_index(typeid(EventType));
-            handler_registration registration{};
+            const void* handle;
 
             if constexpr (traits::arity == 0)
             {
-                safe_registrations_access([&]() {
+                safe_unique_registrations_access([&]() {
                     auto it = handler_registrations_.emplace(type_idx, [class_instance, function](auto) {
                         (class_instance->*function)();
                         });
 
-                    registration.handle = static_cast<const void*>(&(it->second));
+                    handle = static_cast<const void*>(&(it->second));
                     });
             }
             else
             {
-                safe_registrations_access([&]() {
+                safe_unique_registrations_access([&]() {
                     auto it = handler_registrations_.emplace(type_idx, [class_instance, function](auto value) {
                         (class_instance->*function)(std::any_cast<EventType>(value));
                         });
 
-                    registration.handle = static_cast<const void*>(&(it->second));
+                    handle = static_cast<const void*>(&(it->second));
                     });
             }
-            return registration;
+            return { handle, this };
         }
 
         template<typename EventType>
         void fire_event(const EventType& evt) noexcept
         {
-            safe_registrations_access([&]() {
+            safe_shared_registrations_access([&]() {
                 // only call the functions we need to
                 auto [begin_evt_id, end_evt_id] = handler_registrations_.equal_range(std::type_index(typeid(EventType)));
                 for (; begin_evt_id != end_evt_id; ++begin_evt_id)
@@ -105,31 +121,41 @@ namespace dp
 
         bool remove_handler(const handler_registration& registration) noexcept
         {
-            if (!registration.handle) { return false; }
+            if (!registration.handle()) { return false; }
 
-            std::lock_guard<mutex_type> lock(registration_mutex_);
-            for (auto it = handler_registrations_.begin(); it != handler_registrations_.end(); ++it)
-            {
-                if (static_cast<const void*>(&(it->second)) == registration.handle)
+            auto result = false;
+            safe_unique_registrations_access([this, &result, &registration]()
                 {
-                    handler_registrations_.erase(it);
-                    return true;
-                }
-            }
-
-            return false;
+                    for (auto it = handler_registrations_.begin(); it != handler_registrations_.end(); ++it)
+                    {
+                        if (static_cast<const void*>(&(it->second)) == registration.handle())
+                        {
+                            handler_registrations_.erase(it);
+                            result = true;
+                            break;
+                        }
+                    }
+                });
+            return result;
         }
 
         void remove_handlers() noexcept
         {
-            std::lock_guard<mutex_type> lock(registration_mutex_);
-            handler_registrations_.clear();
+            safe_unique_registrations_access([this]()
+                {
+                    handler_registrations_.clear();
+                });
         }
 
         [[nodiscard]] std::size_t handler_count() noexcept
         {
-            std::lock_guard<mutex_type> lock(registration_mutex_);
-            return handler_registrations_.size();
+            std::shared_lock<mutex_type> lock(registration_mutex_);
+            std::size_t count{};
+            safe_shared_registrations_access([this, &count]()
+                {
+                    count = handler_registrations_.size();
+                });
+            return count;
         }
 
     private:
@@ -157,21 +183,76 @@ namespace dp
             std::atomic<std::thread::id> lock_holder_{};
         };
 
-        using mutex_type = mutex;
-        mutex_type registration_mutex_;
+        using mutex_type = std::shared_mutex;
+        mutable mutex_type registration_mutex_;
         std::unordered_multimap<std::type_index, std::function<void(std::any)>> handler_registrations_;
 
         template<typename Callable>
-        void safe_registrations_access(Callable&& callable) {
-            try {
-                if(registration_mutex_.locked_by_caller()) return;
-                // if this fails, an exception may be thrown.
-                std::lock_guard<mutex_type> lock(registration_mutex_);
+        void safe_shared_registrations_access(Callable&& callable)
+        {
+            try
+            {
+                std::shared_lock<mutex_type> lock(registration_mutex_);
                 callable();
             }
-            catch (std::system_error&) {
+            catch (std::system_error&)
+            {
+
+            }
+        }
+        template<typename Callable>
+        void safe_unique_registrations_access(Callable&& callable)
+        {
+            try
+            {
+                // if(registration_mutex_.locked_by_caller()) return;
+                // if this fails, an exception may be thrown.
+                std::unique_lock<mutex_type> lock(registration_mutex_);
+                callable();
+            }
+            catch (std::system_error&)
+            {
                 // do nothing
             }
         }
     };
+
+
+    inline const void* handler_registration::handle() const
+    {
+        return handle_;
+    }
+
+    inline void handler_registration::unregister() const noexcept
+    {
+        if (event_bus_ && handle_)
+        {
+            event_bus_->remove_handler(*this);
+        }
+    }
+
+    inline handler_registration::handler_registration(const void* handle, dp::event_bus* bus)
+        : handle_(handle), event_bus_(bus)
+    {
+    }
+
+    inline handler_registration::handler_registration(handler_registration&& other) noexcept
+        : handle_(std::exchange(other.handle_, nullptr)), event_bus_(std::exchange(other.event_bus_, nullptr))
+    {
+    }
+
+    inline handler_registration& handler_registration::operator=(handler_registration&& other) noexcept
+    {
+        handle_ = std::exchange(other.handle_, nullptr);
+        event_bus_ = std::exchange(other.event_bus_, nullptr);
+        return *this;
+    }
+
+    inline handler_registration::~handler_registration()
+    {
+        if (event_bus_ && handle_)
+        {
+            event_bus_->remove_handler(*this);
+        }
+    }
 }
