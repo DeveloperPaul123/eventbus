@@ -80,6 +80,43 @@ TEST(EventBus, LambdaRegistrationAndDeregistration)
     EXPECT_EQ(evt_bus.handler_count(), 1);
 }
 
+TEST(EventBus, RegisterWhileDispatching)
+{
+    struct nefarious_event_listener
+    {
+        dp::event_bus* evt_bus;
+        void on_event(test_event_type) const
+        {
+            nefarious_event_listener listener{};
+            listener.evt_bus = evt_bus;
+            if (evt_bus)
+            {
+                auto _ = evt_bus->register_handler<test_event_type>(&listener, &nefarious_event_listener::on_event);
+            }
+        }
+    };
+
+    dp::event_bus evt_bus;
+    event_handler_counter counter;
+    const auto registration = evt_bus.register_handler<test_event_type>(&counter, &event_handler_counter::on_test_event);
+
+    nefarious_event_listener listener{};
+    listener.evt_bus = &evt_bus;
+    const dp::handler_registration nef_registration = evt_bus.register_handler<test_event_type>(
+        &listener, &nefarious_event_listener::on_event);
+
+    for (auto i = 0; i < 40; ++i) {
+        evt_bus.fire_event(test_event_type{ 2, "test event", 1.3 });
+        std::cout << "Loop " << i << " Handler count: " << evt_bus.handler_count() << "\n";
+        // count should be 2 because we registered the first object and the 
+        // test fixture class is registered as well (the counter).
+        ASSERT_EQ(evt_bus.handler_count(), 2);
+    }
+
+    ASSERT_TRUE(evt_bus.remove_handler(registration));
+    ASSERT_TRUE(evt_bus.remove_handler(nef_registration));
+}
+
 TEST(EventBus, DeregisterWhileDispatching)
 {
     dp::event_bus evt_bus;
@@ -92,7 +129,7 @@ TEST(EventBus, DeregisterWhileDispatching)
         void on_event(test_event_type)
         {
             if (evt_bus && registrations) {
-                std::for_each(registrations->begin(), registrations->end(), [&](auto& reg) {
+                std::for_each(registrations->begin(), registrations->end(), [&](auto reg) {
                     evt_bus->remove_handler(reg);
                     });
             }
@@ -105,7 +142,7 @@ TEST(EventBus, DeregisterWhileDispatching)
         deregister_while_dispatch_listener listener;
         auto reg = evt_bus.register_handler<test_event_type>(&listener, &deregister_while_dispatch_listener::on_event);
         listeners.emplace_back(listener);
-        registrations.emplace_back(std::move(reg));
+        registrations.emplace_back(reg);
     }
 
     listeners[0].evt_bus = &evt_bus;
@@ -118,7 +155,7 @@ TEST(EventBus, DeregisterWhileDispatching)
     }
 
     // remove all the registrations
-    for (auto& reg : registrations) {
+    for (auto reg : registrations) {
         EXPECT_TRUE(evt_bus.remove_handler(reg));
     }
 
@@ -134,7 +171,7 @@ TEST(EventBus, MultiThreaded) {
         }
         void on_event(const test_event_type& evt) {
             std::cout << "simple event: " << index_ << " " << evt.event_message << "\n";
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         }
     };
 
@@ -142,46 +179,18 @@ TEST(EventBus, MultiThreaded) {
     simple_listener listener_one(1);
     simple_listener listener_two(2);
 
-    auto reg_one = evt_bus.register_handler<test_event_type>(&listener_one, &simple_listener::on_event);
-    auto reg_two = evt_bus.register_handler<test_event_type>(&listener_two, &simple_listener::on_event);
-
-    event_handler_counter event_counter;
-    auto event_handler_reg = evt_bus.register_handler<test_event_type>(&event_counter, &event_handler_counter::on_test_event);
-
     auto thread_one = std::thread([&evt_bus, &listener_one]() {
-        for (auto i = 0; i < 5; ++i)
-        {
-            evt_bus.fire_event(test_event_type{ 3, "thread_one", 1.0 });
-        }
+        evt_bus.fire_event(test_event_type{ 3, "thread_one", 1.0 });
+        auto _ = evt_bus.register_handler<test_event_type>(&listener_one, &simple_listener::on_event);
         });
 
     auto thread_two = std::thread([&evt_bus, &listener_two]() {
-        for (auto i = 0; i < 5; ++i)
-        {
-            evt_bus.fire_event(test_event_type{ 3, "thread_two", 2.0 });
-        }
+        auto _ = evt_bus.register_handler<test_event_type>(&listener_two, &simple_listener::on_event);
+        evt_bus.fire_event(test_event_type{ 3, "thread_two", 2.0 });
         });
 
     thread_one.join();
     thread_two.join();
 
-    // include the event counter
-    EXPECT_EQ(evt_bus.handler_count(), 3);
-
-    EXPECT_EQ(event_counter.get_count(), 10);
-}
-
-TEST(EventBus, AutoDeregisterInDtor)
-{
-    dp::event_bus evt_bus;
-    event_handler_counter counter;
-    {
-        auto registration = evt_bus.register_handler<test_event_type>(&counter, &event_handler_counter::on_test_event);
-    }
-
-    EXPECT_EQ(evt_bus.handler_count(), 0);
-    evt_bus.fire_event(test_event_type{});
-    evt_bus.fire_event(test_event_type{});
-    evt_bus.fire_event(test_event_type{});
-    EXPECT_EQ(counter.get_count(), 0);
+    EXPECT_EQ(evt_bus.handler_count(), 2);
 }

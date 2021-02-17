@@ -20,7 +20,7 @@
         },
         {
             "name": "WSL-Clang-Debug",
-            "generator": "Ninja",
+            "generator": "Unix Makefiles",
             "configurationType": "Debug",
             "buildRoot": "${projectDir}\\out\\build\\${name}",
             "installRoot": "${projectDir}\\out\\install\\${name}",
@@ -41,7 +41,7 @@
         },
         {
             "name": "WSL-GCC-Debug",
-            "generator": "Ninja",
+            "generator": "Unix Makefiles",
             "configurationType": "Debug",
             "buildRoot": "${projectDir}\\out\\build\\${name}",
             "installRoot": "${projectDir}\\out\\install\\${name}",
