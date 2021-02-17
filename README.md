@@ -27,8 +27,7 @@
 
 `eventbus` is a simple, header only C++17 event bus library that doesn't require you to inherit from any sort of `event` class.
 
-- [Overview](#overview)
-- [Features](#features)
+- [Design Goals](#design-goals)
 - [Integration](#integration)
   - [CMake](#cmake)
   - [vcpkg](#vcpkg)
@@ -45,20 +44,16 @@
 - [Author](#author)
 - [Contributors](#contributors)
 
-## Overview
+## Design Goals
 
-`eventbus` implements the "Mediator" pattern. This pattern is useful when you want components to communicate to each other without necessarily "knowing" about each other. Effectively, this is a thread safe event dispatcher with a list of callbacks.
+`eventbus` implements the "Mediator" pattern. This pattern is useful when you want components to communicate to each other without necessarily "knowing" about each other. This can be useful in *some* situations but should be used with caution (there are alternative design patterns to consider).
 
-## Features
-
-- **Does not require event object inheritance** A base `Event` class is not requied for use with `dp::event_bus`. Any class/struct can be used as an event object.
-- **Flexible Callback Types** `eventbus` supports a variety different types of callbacks including:
+- **Do not require event object inheritance** I wanted to implement an event bus system that doesn't require users to inherit from some base `Event` class in order to use the event class.
+- **Flexible Callback Types** It's important that the library supports a variety different types of callbacks including:
   - Lambdas
   - Class member functions
   - Free functions
-- **Flexible Callbacks** No parameter callbacks are also supported as well as taking the event type by value or by `const &`.
-- **RAII de-registrations** The handler registration objects automatically de-register the handler upon destruction.
-- **Thread safety** Multiple threads can fire events at once to the same `event_bus`. Handlers can also be registered from different threads.
+- **Flexible Callbacks** Callbacks should be able to take no input parameters, the event type by `const&` or by value.
 
 ## Integration
 
@@ -110,14 +105,14 @@ void event_callback(event_type evt)
 }
 
 dp::event_bus evt_bus;
-const auto registration_handler = evt_bus.register_handler<event_type>(&event_callback)
+evt_bus.register_handler<event_type>(&event_callback)
 ````
 
 #### Lambda
 
 ````cpp
 dp::event_bus evt_bus;
-const auto registration_handler = evt_bus.register_handler<event_type>([](const event_type& evt)
+evt_bus.register_handler<event_type>([](const event_type& evt)
 {
     // logic code...
 });
@@ -138,7 +133,7 @@ class event_handler
 // other code
 dp::event_bus evt_bus;
 event_handler handler;
-const auto registration_handler = evt_bus.register_handler<event_type>(&handler, &event_handler::on_event);
+evt_bus.register_handler<event_type>(&handler, &event_handler::on_event);
 ````
 
 **Note:** You can't mix a class instance of type `T` with the member function of another class (i.e. `&U::function_name`).
@@ -159,11 +154,6 @@ A complete example can be seen in the [demo](https://github.com/DeveloperPaul123
 ## Limitations
 
 In general, all callback functions **must** return `void`. Currently, `eventbus` only supports single argument functions as callbacks.
-
-The following use cases are not supported:
-
-- Registering a callback inside an event callback.
-- De-registering a callback inside an event callback.
 
 ## Contributing
 
