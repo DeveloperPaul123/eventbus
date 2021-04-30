@@ -59,6 +59,7 @@
 - **Flexible Callbacks** No parameter callbacks are also supported as well as taking the event type by value or by `const &`.
 - **RAII de-registrations** The handler registration objects automatically de-register the handler upon destruction.
 - **Thread safety** Multiple threads can fire events at once to the same `event_bus`. Handlers can also be registered from different threads.
+  - **Note:** While the library can handle events fired from different threads note that the thread that fires the event is also the thread that the callback will run on. This library does not ensure that the callback is run on the thread it was registered on. This may or may not be the desired behavior especially in the context of something like thread pools.
 
 ## Integration
 
