@@ -10,6 +10,7 @@
 #include <atomic>
 #include <thread>
 #include <utility>
+#include <mutex>
 
 namespace dp
 {
