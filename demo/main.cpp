@@ -1,4 +1,5 @@
 #include <iostream>
+#include <string>
 
 #include <eventbus/event_bus.hpp>
 
@@ -57,7 +58,7 @@ int main()
     const auto empty_event_handler = evt_bus.register_handler<third_event>([]() {std::cout << "I just do stuff when a third_event is fired." << new_line; });
     
     first_event evt{ "hello from dummy event" };
-    evt_bus.fire_event(&evt);
+    evt_bus.fire_event(evt);
     evt_bus.fire_event(third_event{ 13.0 });
     evt_bus.remove_handler(third_event_reg);
     evt_bus.fire_event(third_event{ 13.0 });
