@@ -16,6 +16,12 @@ namespace dp
 {
 	class event_bus;
 
+	/**
+	* @brief A registration handle for a particular handler of an event type.
+	* @details This class is move constructible only. It also assumed that the lifespan of this object will be as long
+	* or shorter than that of the event bus. This class is move constructible for that reason, but there are still 
+	* some cases where you can run into life time issues. 
+	*/
 	class handler_registration
 	{
 		const void* handle_{ nullptr };
@@ -27,24 +33,43 @@ namespace dp
 		handler_registration& operator=(handler_registration&& other) noexcept;
 		~handler_registration();
 
+		/**
+		 * @brief Pointer to the underlying handle.
+		*/
 		[[nodiscard]] const void* handle() const;
+
+		/**
+		 * @brief Unregister this handler from the event bus.
+		*/
 		void unregister() const noexcept;
 	protected:
 		handler_registration(const void* handle, dp::event_bus* bus);
 		friend class event_bus;
 	};
 
+	/**
+	 * @brief A central event handler class that connects event handlers with the events.
+	*/
 	class event_bus
 	{
 	public:
 
 		event_bus() = default;
-		template<typename EventType, typename EventHandler>
+
+		/**
+		 * @brief Register an event handler for a given event type.
+		 * @tparam EventType The event type
+		 * @tparam EventHandler The invocable event handler type.
+		 * @param handler A callable handler of the event type. Can accept the event as param or take no params.
+		 * @return A handler_registration instance for the given handler.
+		*/
+		template<typename EventType, typename EventHandler, typename = std::enable_if_t<std::is_invocable_v<EventHandler> || std::is_invocable_v<EventHandler, EventType>>>
 		[[nodiscard]] handler_registration register_handler(EventHandler&& handler)
 		{
 			using traits = detail::function_traits<EventHandler>;
 			const auto type_idx = std::type_index(typeid(EventType));
 			const void* handle;
+			// check if the function takes any arguments. 
 			if constexpr (traits::arity == 0)
 			{
 				safe_unique_registrations_access([&]() {
@@ -68,6 +93,15 @@ namespace dp
 			return { handle, this };
 		}
 
+		/**
+		 * @brief Register an event handler for a given event type.
+		 * @tparam EventType The event type
+		 * @tparam ClassType Event handler class
+		 * @tparam MemberFunction Event handler member function
+		 * @param class_instance Instance of ClassType that will handle the event.
+		 * @param function Pointer to the MemberFunction of the ClassType.
+		 * @return A handler_registration instance for the given handler.
+		*/
 		template<typename EventType, typename ClassType, typename MemberFunction>
 		[[nodiscard]] handler_registration register_handler(ClassType* class_instance, MemberFunction&& function) noexcept
 		{
@@ -100,6 +134,11 @@ namespace dp
 			return { handle, this };
 		}
 
+		/**
+		 * @brief Fire an event to notify event handlers.
+		 * @tparam EventType The event type
+		 * @param evt The event to pass to all event handlers.
+		*/
 		template<typename EventType, typename = std::enable_if_t<!std::is_pointer_v<EventType>>>
 		void fire_event(EventType&& evt) noexcept
 		{
@@ -110,9 +149,14 @@ namespace dp
 				{
 					begin_evt_id->second(local_event);
 				}
-				});
+			});
 		}
 
+		/**
+		 * @brief Remove a given handler from the event bus.
+		 * @param registration The registration object returned by register_handler.
+		 * @return true is handler removal was successful, false otherwise.
+		*/
 		bool remove_handler(const handler_registration& registration) noexcept
 		{
 			if (!registration.handle()) { return false; }
@@ -133,6 +177,9 @@ namespace dp
 			return result;
 		}
 
+		/**
+		 * @brief Remove all handlers from event bus.
+		*/
 		void remove_handlers() noexcept
 		{
 			safe_unique_registrations_access([this]()
@@ -141,6 +188,10 @@ namespace dp
 				});
 		}
 
+		/**
+		 * @brief Get the number of handlers registered with the event bus.
+		 * @return The total number of handlers. 
+		*/
 		[[nodiscard]] std::size_t handler_count() noexcept
 		{
 			std::shared_lock<mutex_type> lock(registration_mutex_);
