@@ -204,30 +204,6 @@ namespace dp
 		}
 
 	private:
-		class mutex : public std::mutex
-		{
-		public:
-			void lock()
-			{
-				std::mutex::lock();
-				lock_holder_ = std::this_thread::get_id();
-			}
-
-			void unlock()
-			{
-				lock_holder_ = std::thread::id();
-				std::mutex::unlock();
-			}
-
-			[[nodiscard]] bool locked_by_caller() const
-			{
-				return lock_holder_ == std::this_thread::get_id();
-			}
-
-		private:
-			std::atomic<std::thread::id> lock_holder_{};
-		};
-
 		using mutex_type = std::shared_mutex;
 		mutable mutex_type registration_mutex_;
 		std::unordered_multimap<std::type_index, std::function<void(std::any)>> handler_registrations_;
