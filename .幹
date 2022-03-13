@@ -9,12 +9,7 @@ jobs:
   build:
     runs-on: ${{matrix.os}}
     name: ${{ matrix.os}} ${{ matrix.version }} C++${{ matrix.cpp }}
-    strategy:
-      fail-fast: false
-      max-parallel: 4
-      matrix:
-        os: [ubuntu-latest, ubuntu-20.04]
-        cpp: [17]
+   20.04]
         version: [gcc7, gcc8, gcc9, clang]
     env:
       CPP_STANDARD: ${{ matrix.cpp }}
@@ -27,7 +22,4 @@ jobs:
     - name: Build
       run: cmake --build build --config Debug -j4
 
-    - name: Run tests
-      run: |
-        cd build
-        ctest --build-config Debug
+0988003426
