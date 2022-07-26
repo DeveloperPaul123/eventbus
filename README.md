@@ -13,7 +13,7 @@
     <img src="https://img.shields.io/badge/Say%20Thanks-👍-1EAEDB.svg" alt="Say thanks">
   </a>
   
-  <a href="https://discord.gg/MyGjmfQTFP">
+  <a href="https://discord.gg/CX2ybByRnt">
     <img alt="Discord" src="https://img.shields.io/discord/652515194572111872">
   </a>
   
