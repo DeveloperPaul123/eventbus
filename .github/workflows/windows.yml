@@ -21,12 +21,12 @@ jobs:
       matrix:
         os: [windows-latest]
         cpp: [17]
-        version: [vs2019, clangcl]
+        version: [msvc, clangcl]
         include:
-          - version: vs2019
-            generator: '"Visual Studio 16 2019"'
+          - version: msvc
+            generator: '"Visual Studio 17 2022"'
           - version: clangcl
-            generator: '"Visual Studio 16 2019" -T "clangcl"'
+            generator: '"Visual Studio 17 2022" -T "clangcl"'
     env:
       CPP_STANDARD: ${{ matrix.cpp }}
     steps:
