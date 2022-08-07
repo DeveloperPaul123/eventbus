@@ -6,7 +6,7 @@
 
 struct test_event_type {
     int id{-1};
-    std::string event_message{""};
+    std::string event_message;
     double data_value{1.0};
 };
 
@@ -123,7 +123,7 @@ TEST(EventBus, MultiThreaded) {
 
       public:
         explicit simple_listener(int index) : index_(index) {}
-        void on_event(const test_event_type& evt) {
+        void on_event(const test_event_type& evt) const {
             std::cout << "simple event: " << index_ << " " << evt.event_message << "\n";
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }

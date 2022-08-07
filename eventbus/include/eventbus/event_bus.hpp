@@ -141,9 +141,9 @@ namespace dp {
         void fire_event(EventType&& evt) noexcept {
             safe_shared_registrations_access([this, local_event = std::forward<EventType>(evt)]() {
                 // only call the functions we need to
-                auto [begin_evt_id, end_evt_id] =
-                    handler_registrations_.equal_range(std::type_index(typeid(EventType)));
-                for (; begin_evt_id != end_evt_id; ++begin_evt_id) {
+                for (auto [begin_evt_id, end_evt_id] =
+                         handler_registrations_.equal_range(std::type_index(typeid(EventType)));
+                     begin_evt_id != end_evt_id; ++begin_evt_id) {
                     begin_evt_id->second(local_event);
                 }
             });
@@ -185,7 +185,6 @@ namespace dp {
          * @return The total number of handlers.
          */
         [[nodiscard]] std::size_t handler_count() noexcept {
-            std::shared_lock<mutex_type> lock(registration_mutex_);
             std::size_t count{};
             safe_shared_registrations_access(
                 [this, &count]() { count = handler_registrations_.size(); });
@@ -209,7 +208,6 @@ namespace dp {
         template <typename Callable>
         void safe_unique_registrations_access(Callable&& callable) {
             try {
-                // if(registration_mutex_.locked_by_caller()) return;
                 // if this fails, an exception may be thrown.
                 std::unique_lock<mutex_type> lock(registration_mutex_);
                 callable();

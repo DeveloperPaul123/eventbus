@@ -89,9 +89,9 @@ int main() {
         &callback_obj, &first_event_callback_object::on_third_event);
 
     // the following does not compile
-    // third_event_object teo;
+    // third_event_callback_object teo;
     // const auto rg = evt_bus.register_handler<third_event>(&teo,
-    // &my_callback_object::on_third_event);
+    // &first_event_callback_object::on_third_event);
 
     second_event snd_evt{2, "hello there from second event"};
     first_event first_evt{"another first event"};
