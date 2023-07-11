@@ -25,29 +25,9 @@
   </a>
 </p>
 
-`eventbus` is a simple, header only C++17 event bus library that doesn't require you to inherit from any sort of `event` class.
-
-- [Overview](#overview)
-- [Features](#features)
-- [Integration](#integration)
-  - [CMake](#cmake)
-  - [vcpkg](#vcpkg)
-- [Usage](#usage)
-  - [Define An Event Object](#define-an-event-object)
-  - [Registering Handlers](#registering-handlers)
-    - [Free function](#free-function)
-    - [Lambda](#lambda)
-    - [Class Member Function](#class-member-function)
-    - [Firing Events](#firing-events)
-- [Limitations](#limitations)
-- [Contributing](#contributing)
-- [License](#license)
-- [Author](#author)
-- [Contributors](#contributors)
-
 ## Overview
 
-`eventbus` implements the "Mediator" pattern. This pattern is useful when you want components to communicate to each other without necessarily "knowing" about each other. Effectively, this is a thread safe event dispatcher with a list of callbacks.
+`eventbus` is a simple, header only C++17 event bus library that doesn't require you to inherit from any sort of `event` class. The libraryimplements the "Mediator" pattern. This pattern is useful when you want components to communicate to each other without necessarily "knowing" about each other. Effectively, this is a thread safe event dispatcher with a list of callbacks.
 
 ## Features
 
@@ -61,35 +41,6 @@
 - **Thread safety** Multiple threads can fire events at once to the same `event_bus`. Handlers can also be registered from different threads.
   - **Note:** While the library can handle events fired from different threads note that the thread that fires the event is also the thread that the callback will run on. This library does not ensure that the callback is run on the thread it was registered on. This may or may not be the desired behavior especially in the context of something like thread pools.
 
-## Integration
-
-`eventbus` is a header only library. All the files you need are in the `eventbus/include` folder. To use the library just include `eventbus/event_bus.hpp`.
-
-### CMake
-
-`eventbus` defines three CMake `INTERFACE` targets that can be used in your project:
-* `eventbus`
-* `eventbus::eventbus`
-* `dp::eventbus`
-
-````cmake
-find_package(dp::eventbus REQUIRED)
-````
-
-Alternatively, you can use something like [CPM](https://github.com/TheLartians/CPM) which is based on CMake's `Fetch_Content` module.
-
-````cmake
-CPMAddPackage(
-    NAME eventbus
-    GITHUB_REPOSITORY DeveloperPaul123/eventbus
-    GIT_TAG #053902d63de5529ee65d965f8b1fb0851eceed24 change this to latest commit/release tag
-)
-````
-
-### vcpkg
-
-:construction: This library will be on `vcpkg` soon. :construction:
-
 ## Usage
 
 The basic premise of the `event_bus` is that with it, you can:
@@ -98,7 +49,7 @@ The basic premise of the `event_bus` is that with it, you can:
 
 ### Define An Event Object
 
-The "event" object can really be any class or structure you want. This is where the flexibility of this library shines.
+The "event" object can be any class or structure you want.
 
 ### Registering Handlers
 
@@ -156,6 +107,35 @@ evt_bus.fire_event(evt); // all connect handler for the given event type will be
 ````
 
 A complete example can be seen in the [demo](https://github.com/DeveloperPaul123/eventbus/tree/develop/demo) project.
+
+## Integration
+
+`eventbus` is a header only library. All the files you need are in the `eventbus/include` folder. To use the library just include `eventbus/event_bus.hpp`.
+
+### CMake
+
+`eventbus` defines three CMake `INTERFACE` targets that can be used in your project:
+* `eventbus`
+* `eventbus::eventbus`
+* `dp::eventbus`
+
+````cmake
+find_package(dp::eventbus REQUIRED)
+````
+
+Alternatively, you can use something like [CPM](https://github.com/TheLartians/CPM) which is based on CMake's `Fetch_Content` module.
+
+````cmake
+CPMAddPackage(
+    NAME eventbus
+    GITHUB_REPOSITORY DeveloperPaul123/eventbus
+    GIT_TAG #053902d63de5529ee65d965f8b1fb0851eceed24 change this to latest commit/release tag
+)
+````
+
+### vcpkg
+
+:construction: This library will be on `vcpkg` soon. :construction:
 
 ## Limitations
 
